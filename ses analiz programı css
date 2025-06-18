@@ -1,0 +1,99 @@
+#main_window{
+    background-color: rgb(54, 54, 54);
+}
+
+QSplitter{
+    background-color: rgb(54, 54, 54);
+}
+QWidget{
+    background-color: rgb(54, 54, 54);
+}
+
+QCheckBox{
+    color: #ffffff;
+    font-family: serif;
+    font-size: 13px;
+    font-weight: bold;
+    border: 2px solid rgb(136, 136, 136);
+}
+
+QComboBox{
+    background-color: #252525;
+    color: rgb(255, 255, 255);
+    font-weight:bold;
+    font-size: 15px;
+    border: 2px solid rgb(136, 136, 136);
+}
+
+QLabel{
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: bolder;
+    border-radius: 4px;
+    border: 2px solid rgb(136, 136, 136);
+}
+
+QSpinBox{
+    background-color: #252525;
+    color: bisque;
+    font-weight:bold;
+    font-size: 15px;
+}
+
+QPushButton{
+    background-color: #3d3c3c;
+    color: bisque;
+    font-weight: bold;
+    font-size: 15px;
+    font-family: sans-serif;
+    border: 0.5px solid goldenrod;
+    border-radius: 15px;
+}
+QPushButton:hover{
+    background-color: #4e3838;
+    color: rgb(182, 113, 113);
+    font-size: 17px;    
+}
+
+QPushButton:pressed{
+    background-color: #000000;
+    color: rgb(158, 157, 157);
+    font-size: 24.4px;
+    font-weight: lighter;
+}
+QTreeView{
+    font-weight: lighter;
+    font-size: 14px;
+    color: rgb(151, 145, 145);
+}
+
+QLineEdit{
+    background-color: #3d3c3c;
+    color: bisque;
+    font-weight: bolder;
+    font-size: 14px;
+    font-family: sans-serif;
+    border: 0.5px solid goldenrod;
+    border-radius: 15px;    
+}
+
+QMenuBar{
+    background-color: rgb(70, 70, 70);
+    color: rgb(163, 163, 163);
+    font-weight: bold;
+    font-size: 15px;
+}
+
+#side_menu{
+    background-color:#252525;
+    border: 2px solid rgb(255, 254, 254);
+    border-radius: 5px;
+}
+
+#fun_label{
+    color: #ffea00;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 4px;
+    border: 2px solid rgb(85, 0, 254);    
+}
