@@ -1,19 +1,3 @@
-#Bu projede PYQT5-Pyside gui içeren modüler ve tasarımsal olarak modern bir program yazıcaz
-
-#ne kadar basit gözüksede bazen o kadar g*t s*kici çıkabiliyorki ben bile şaşırıyom @mına koyim
-
-#neyse işte kullnacağım modüller bence şunlar alta yazıcam amk yana ne bakıyon neyse bu arada yeni modül/framework eklenebilir haberin olsun 
-
-#sonra neden böyle oldu deme 
-
-#bazı modüller: 1-wave 2-csv 3-numpy 4-asyncio 5-time 6-datetime
-
-#Bazı FrameWork'ler: PyQt5/PySide (belkide ekstra olarak Tkİnter)
-
-
-#Burayada kodu yazacam amk işte Lan salakmısın üste değil alttaki boş satırlara yazıcam#
-
-
 from PyQt5.QtCore import*
 from PyQt5.QtWidgets import*
 from PyQt5.QtGui import*
@@ -153,17 +137,13 @@ class mainUİ(QMainWindow):
         self.canvas.plot(np.random.normal(0,10,50),pen='w')
         self.canvas.setBackground("#000000")
 
-        self.median_button_icons = ["❚❚",
-                                    "▶"]
-
-        self.back = QPushButton(text='⏮')
-        self.stop = QPushButton(text="▶")
-        self.forward = QPushButton(text='⏭')
+        self.stop = QPushButton(text="DURDUR")
+        self.start = QPushButton(text='BAŞLAT')
 
         self.graph_settings_label = QLabel(text='Grafik seçenekleri || Grafik Ayarları')
         self.graph_settings_label.setAlignment(Qt.AlignCenter)
 
-        self.check_boxes_with_graph_settings = [QCheckBox(text='Çizgi Grafiği (PLOT)'),QCheckBox(text='Ampirik kümülatif dağılım grafiği'),QCheckBox(text='Histogram grafiği (HİST)'),QCheckBox(text='Bar grafiği (BAR)')]
+        self.check_boxes_with_graph_settings = [QLabel('Frekans çizme ayarları:'),QCheckBox(text='Ses ile senkronize çizim'),QCheckBox(text='Klasik çizim(sadece frekans grafiği)'),QCheckBox(text='Optimizeli çizim(4-10 Dakikanın üzerindeki sesleri farklı bir motorda analiz eder)'),QCheckBox(text='Optimizeli çizim-2(9-15 dakikanın üzerindeki sesleri farklı bir monitörde analiz eder)')]
 
         self.graph_apperance_settings = [QLabel(text='İncelik/kalınlık'),QSpinBox(),QLabel(text='Yükseklik(historgamlar için)'),QSpinBox(),QLabel(text='Grafik Rengi'),QComboBox(),QLabel(text='Grafik monitörü arka plan rengi'),QComboBox()]
 
@@ -178,9 +158,8 @@ class mainUİ(QMainWindow):
 
         self.graph_apperance_settings[5].setCurrentIndex(1)
 
-        self.back.setMaximumWidth(30)
-        self.stop.setMaximumWidth(30)
-        self.forward.setMaximumWidth(30)
+        self.stop.setMaximumWidth(70)
+        self.start.setMaximumWidth(70)
 
         self.volume_slider = QSlider()
         self.volume_slider.setRange(0,100)
@@ -231,26 +210,21 @@ class mainUİ(QMainWindow):
         container_widget.setLayout(container_layout)
 
         self.compressor_widgets = [
+            QPushButton(text='Dosya:'),
+            QPushButton(text=f'Mevcut seçili ses dosyası: --Seçilmedi--'),
             QPushButton(),
             QPushButton(),
-            QPushButton(),
-            QPushButton(),
-            QPushButton(f'Mevcut seçili ses dosyası: --Seçilmedi--'),
+            QPushButton(text='Ses çalma:'),
 
                             ]
 
-        self.compressor_widgets[4].setEnabled(False)
-
         for compressors in self.compressor_widgets:
-            compressors.setStyleSheet('background-color:54, 54, 54;border:none')
+            compressors.setEnabled(False)
             container_layout.addWidget(compressors)
 
-        main_lbl = QLabel(text='Geri sar || Durdur/Başlat || Başa sar')
-        container_layout.addWidget(main_lbl)
 
-        container_layout.addWidget(self.back,alignment=Qt.AlignCenter)
         container_layout.addWidget(self.stop,alignment=Qt.AlignCenter)
-        container_layout.addWidget(self.forward,alignment=Qt.AlignCenter)
+        container_layout.addWidget(self.start,alignment=Qt.AlignCenter)
 
         self.splt_3_h.addWidget(container_widget)
 
@@ -291,9 +265,8 @@ class mainUİ(QMainWindow):
         self.visulaizer_label.setAlignment(Qt.AlignCenter)
 
         self.visulaizer_label.setObjectName('visulaizer_label')
-        self.back.setObjectName('back')
         self.stop.setObjectName('stop')
-        self.forward.setObjectName('forward')
+        self.start.setObjectName('forward')
         self.volume_indicator.setObjectName('volume_indicator')
         self.volume_slider.setObjectName('volume_slider')
         self.file_system_label.setObjectName('file_system_label')
@@ -343,27 +316,34 @@ class mainUİ(QMainWindow):
         exporter.export('ses_grafigi.png')
     
     def procces_sound_file_event(self):
+
+        #checkbox items#
+        self.animated_draw = False
+        self.classic_draw = False
+        self.optimize_draw_with_4_10_mins = False
+        self.optimize_draw_with_9_15_mins = False
+
         current = self.file_system_view.currentIndex()
         file_path = self.file_sys_model.filePath(current)
 
         file_exception_value = bool(0)
 
         try:
-            sound_file = wave.open(file_path)
+            self.sound_file = wave.open(file_path)
 
         except:
-            file_is_not_waw_error = messagebox.showwarning(title='Dosya türü hatası!',message='Lütfen bir .WAV dosyası seçin ve daha sonra tekrar deneyin!')
+            check_box_warning_message = QMessageBox.warning(self,'Dosya türü hatası!','Lütfen bir .WAV dosyası seçin ve daha sonra tekrar deneyin!')
 
             file_exception_value = bool(1)
         
         if file_exception_value == bool(0):
-            self.sound_file_nframes = sound_file.getnframes()
+            self.sound_file_nframes = self.sound_file.getnframes()
 
-            self.sound_file_channels = sound_file.getnchannels()
+            self.sound_file_channels = self.sound_file.getnchannels()
 
-            self.sound_file_time = f'{sound_file.getnframes() / sound_file.getframerate():.2f}'
+            self.sound_file_time = f'{self.sound_file.getnframes() / self.sound_file.getframerate():.2f}'
 
-            self.sound_file_hz = sound_file.getframerate()
+            self.sound_file_hz = self.sound_file.getframerate()
 
             if self.sound_file_channels == 2:
                 self.sound_info_labels[1].setText(f'Sesin kanal türü: STERO')
@@ -377,32 +357,82 @@ class mainUİ(QMainWindow):
 
             self.canvas.clear()
 
-            self.byte_array = sound_file.readframes(nframes=self.sound_file_nframes)
+            self.byte_array = self.sound_file.readframes(nframes=self.sound_file_nframes)
 
-            if str(sound_file.getnchannels() * 8).startswith('16'):
+            if str(self.sound_file.getnchannels() * 8).startswith('16'):
                 self.numpy_byte_array = np.frombuffer(self.byte_array,dtype=np.int16)
 
-            elif str(sound_file.getnchannels() * 8).startswith('8'):
+            elif str(self.sound_file.getnchannels() * 8).startswith('8'):
                 self.numpy_byte_array = np.frombuffer(self.byte_array,dtype=np.int8)
             
-            sound_data = sound_file.getnframes() / sound_file.getframerate()
+            sound_data = self.sound_file.getnframes() / self.sound_file.getframerate()
 
-            numpy_linspace = np.linspace(0,sound_data,len(self.numpy_byte_array))
+            self.numpy_linspace = np.linspace(0,sound_data,len(self.numpy_byte_array))
 
-            #self.canvas.plot(numpy_linspace,self.numpy_byte_array)
+            self.sound_file_procces_consider()
 
+            self.sound_frequency_x_index = self.numpy_linspace
+            self.sound_frequency_y_index = self.numpy_byte_array
 
-            #self.canvas.plot()
+            self.sound_frequency_x_index_length = len(self.numpy_linspace)
+            self.sound_frequency_y_index_lengt = len(self.numpy_byte_array)
         
         else:
             print('File is not valid!')
 
+    def sound_file_procces_consider(self):
+
+        #(mutually exclusive)#
+        if self.check_boxes_with_graph_settings[1].isChecked():
+            self.animated_draw = True
+            self.classic_draw = False
+            self.check_boxes_with_graph_settings[2].setChecked(False)
+
+        if self.check_boxes_with_graph_settings[2].isChecked():
+            self.classic_draw = True
+            self.animated_draw = False
+            self.check_boxes_with_graph_settings[1].setChecked(False)
+
+        if self.check_boxes_with_graph_settings[3].isChecked():
+            self.optimize_draw_with_4_10_mins = True
+            self.optimize_draw_with_9_15_mins = False
+            self.check_boxes_with_graph_settings[4].setChecked(False)
+
+        if self.check_boxes_with_graph_settings[4].isChecked():
+            self.optimize_draw_with_9_15_mins = True
+            self.optimize_draw_with_4_10_mins = False
+            self.check_boxes_with_graph_settings[3].setChecked(False)
+        
+        if self.animated_draw == True:
+            self.animated_draw_index = 0
+
+            self.copy_length_x = self.sound_frequency_x_index_length
+            self.copy_length_y = self.sound_frequency_y_index_lengt
+
+            if self.animated_draw == True:
+                self.animated_draw_timer = QTimer() 
+                self.animated_draw_timer.timeout.connect(self.animate_sound_frequency_graph)
+                self.animated_draw_timer.start(1000)
+            
+            else:
+                pass
+        
+        elif self.check_boxes_with_graph_settings[1].isChecked() == False and self.check_boxes_with_graph_settings[2].isChecked() == False:
+            if self.check_boxes_with_graph_settings[3].isChecked() == False and self.check_boxes_with_graph_settings[4].isChecked() == False: 
+                check_box_warning_message = QMessageBox.warning(self,'Sistem uyarı mesajı','Lütfen en az 1 tane seçenek seçin!!')
+
+
+    def animate_sound_frequency_graph(self):
+        #dolacak kısım
+        pass
+
+    
 
     def sound_file_select_event(self):
         current = self.file_system_view.currentIndex()
         file_path = self.file_sys_model.filePath(current)
 
-        self.compressor_widgets[4].setText(f'Mevcut seçili ses dosyası: {self.file_sys_model.fileName(current)}')
+        self.compressor_widgets[1].setText(f'Mevcut seçili ses dosyası: {self.file_sys_model.fileName(current)}')
        
     def hide_graph(self):
         self.canvas.clear()
@@ -470,7 +500,7 @@ class mainUİ(QMainWindow):
         self.current_root_path = self.root_path_input.text()
 
         if self.current_root_path == ' ' or self.current_root_path == '':
-            messagebox.showwarning(title='Dizin tanımlama hatası!',message='Dizin tanımlanırken bir sorun oluştu lütfen dizini tekrar girip deneyiniz!')
+            root_path_error_message = QMessageBox.warning(self,'Dizin tanımlama hatası!','Dizin tanımlanırken bir sorun oluştu lütfen geçerli bir dosya dizini girip tekrar deneyiniz!')
         
         else:
             pass
@@ -481,7 +511,7 @@ class mainUİ(QMainWindow):
         except:
             warning_message = messagebox
 
-            messagebox.showerror(title='Dizin tanımlama hatası!',message='Dizin tanımlanırken kritik bir sorun oluştu lütfen tekrar deneyiniz')
+            root_path_error_message = QMessageBox.critical(self,'Dizin tanımlama hatası!','Dizin tanımlanırken bir sorun oluştu lütfen geçerli bir dosya dizini girip tekrar deneyiniz!')
 
         finally:
             if self.file_system_view.currentIndex() != self.current_index:
