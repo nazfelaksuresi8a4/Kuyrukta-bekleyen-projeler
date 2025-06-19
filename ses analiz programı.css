@@ -97,3 +97,22 @@ QMenuBar{
     border-radius: 4px;
     border: 2px solid rgb(85, 0, 254);    
 }
+
+QSlider::groove:vertical {
+    border: 1px solid #999999;
+    background: rgb(119, 118, 118);
+    margin: 2px 0;
+    border-radius: 4px;
+}
+
+QSlider::handle:vertical {
+    background: rgb(34, 34, 34);
+    border: 1px solid #5c5c5c;
+    margin: -5px 0;
+    border-radius: 4px;
+}
+
+QSlider::sub-page:vertical {
+    background: rgb(42, 46, 42);
+    border-radius: 4px;
+}
