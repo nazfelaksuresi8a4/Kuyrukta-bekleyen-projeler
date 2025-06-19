@@ -328,17 +328,19 @@ class mainUİ(QMainWindow):
         self.procces_sound_file.clicked.connect(self.procces_sound_file_event)
 
         #CSS Side/
-
         css_file = open(r'program_qss.css','r')
 
         readed_css_file = css_file.read()
 
         self.setStyleSheet(readed_css_file) 
 
+        #plot exporter-side/
+
+    def export_graph(self):
         plotİtem = self.plot_item.getPlotItem()
 
         exporter = exporters.ImageExporter(plotİtem)
-        exporter.export('ananin_ami.png')
+        exporter.export('ses_grafigi.png')
     
     def procces_sound_file_event(self):
         current = self.file_system_view.currentIndex()
@@ -355,6 +357,8 @@ class mainUİ(QMainWindow):
             file_exception_value = bool(1)
         
         if file_exception_value == bool(0):
+            self.sound_file_nframes = sound_file.getnframes()
+
             self.sound_file_channels = sound_file.getnchannels()
 
             self.sound_file_time = f'{sound_file.getnframes() / sound_file.getframerate():.2f}'
@@ -370,6 +374,25 @@ class mainUİ(QMainWindow):
             self.sound_info_labels[2].setText(f'Sesin süresi: {self.sound_file_time} Saniye')
             self.sound_info_labels[3].setText(f'Sesin bit sayısı: {self.sound_file_channels*8}') 
             self.sound_info_labels[4].setText(f'Sesin HZ sayısı: {self.sound_file_hz}') 
+
+            self.canvas.clear()
+
+            self.byte_array = sound_file.readframes(nframes=self.sound_file_nframes)
+
+            if str(sound_file.getnchannels() * 8).startswith('16'):
+                self.numpy_byte_array = np.frombuffer(self.byte_array,dtype=np.int16)
+
+            elif str(sound_file.getnchannels() * 8).startswith('8'):
+                self.numpy_byte_array = np.frombuffer(self.byte_array,dtype=np.int8)
+            
+            sound_data = sound_file.getnframes() / sound_file.getframerate()
+
+            numpy_linspace = np.linspace(0,sound_data,len(self.numpy_byte_array))
+
+            #self.canvas.plot(numpy_linspace,self.numpy_byte_array)
+
+
+            #self.canvas.plot()
         
         else:
             print('File is not valid!')
