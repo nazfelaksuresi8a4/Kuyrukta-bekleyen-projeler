@@ -303,6 +303,8 @@ class mainUİ(QMainWindow):
         self.show_preverius_graph.clicked.connect(self.show_graph)
         self.apply_sound_file.clicked.connect(self.sound_file_select_event)
         self.apply_sound_file.clicked.connect(self.procces_sound_file_event)
+        self.start.clicked.connect(self.resume_graph)
+        self.stop.clicked.connect(self.pause_graph)
 
         #CSS Side/
         css_file = open(r'program_qss.css','r')
@@ -435,7 +437,7 @@ class mainUİ(QMainWindow):
             if self.animated_draw == True:
                 self.animated_draw_timer = QTimer() 
                 self.animated_draw_timer.timeout.connect(self.animate_sound_frequency_graph)
-                self.animated_draw_timer.start(10)
+                self.animated_draw_timer.start(15)
             
             else:
                 pass
@@ -462,7 +464,7 @@ class mainUİ(QMainWindow):
         self.compressor_widgets[1].setText(f'Mevcut seçili ses dosyası: {self.file_sys_model.fileName(current)}')
 
     def animate_sound_frequency_graph(self):
-        MAX_POINTS = 10000  # İstersen burada sınırı değiştir
+        MAX_POINTS = 10000  
 
         current = self.file_system_view.currentIndex()
 
@@ -495,17 +497,23 @@ class mainUİ(QMainWindow):
             self.x_datas = self.x_datas[-MAX_POINTS:]
             self.y_datas = self.y_datas[-MAX_POINTS:]
             
-
         self.curve.setData(self.x_datas,self.y_datas)
-
-        
-
        
     def hide_graph(self):
-        pass
+        self.plot_item.clear()
+        self.curve = self.plot_item.plot([1,1,1,1],[1,1,1,1])
 
     def show_graph(self):
-        pass
+        self.plot_item.clear()
+        self.curve = self.plot_item.plot(np.random.normal(0,10,50))
+
+    def pause_graph(self):
+        self.animated_draw_timer.stop()
+        self.mixer_variable.pause()
+
+    def resume_graph(self):
+        self.animated_draw_timer.start()
+        self.mixer_variable.unpause()
 
     def optimize_widget_sizes(self):
         self.volume_indicator.setMaximumHeight(self.file_system_label.height())
