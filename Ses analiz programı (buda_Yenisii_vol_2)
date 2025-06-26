@@ -58,7 +58,7 @@ class mainUİ(QMainWindow):
         
         #widget-settings
         menu_layout = QVBoxLayout()
-        main_layout = QHBoxLayout()
+        self.main_layout = QHBoxLayout()
 
         left_layout = QHBoxLayout()
         right_layout = QVBoxLayout()
@@ -66,7 +66,7 @@ class mainUİ(QMainWindow):
         graph_settings_screen_layout = QHBoxLayout()
         sound_file_info_screen_layout = QVBoxLayout()
 
-        main_widget.setLayout(main_layout)
+        main_widget.setLayout(self.main_layout)
 
         left_widget.setLayout(left_layout)
         right_widget.setLayout(right_layout)
@@ -76,10 +76,12 @@ class mainUİ(QMainWindow):
 
         self.menu_widget.setLayout(menu_layout)
 
-        main_layout.addWidget(self.menu_widget)
-        main_layout.addWidget(left_widget)
-        main_layout.addWidget(right_widget)
-        main_layout.addWidget(self.sound_file_info_widget)
+        self.floating_widget = QDockWidget()
+
+        self.main_layout.addWidget(self.menu_widget)
+        self.main_layout.addWidget(left_widget)
+        self.main_layout.addWidget(right_widget)
+        self.main_layout.addWidget(self.sound_file_info_widget)
 
         left_layout.addWidget(self.splt_1_v)
         left_layout.addWidget(self.splt_2_v)
@@ -152,7 +154,7 @@ class mainUİ(QMainWindow):
 
         self.graph_apperance_settings = [QLabel(text='İncelik/kalınlık'),QSpinBox(),QLabel(text='Yükseklik(historgamlar için)'),QSpinBox(),QLabel(text='Grafik Rengi'),QComboBox(),QLabel(text='Grafik monitörü arka plan rengi'),QComboBox()]
 
-        self.colors = ['Kırmızı','Mavi','Sarı','Yeşil','Turuncu','Beyaz']
+        self.colors = ['Kırmızı','Mavi','Sarı','Yeşil','Turuncu','Beyaz','Siyah']
 
         self.graph_apperance_settings[1].setRange(0,10)
         self.graph_apperance_settings[3].setRange(0,50)
@@ -161,7 +163,8 @@ class mainUİ(QMainWindow):
             self.graph_apperance_settings[5].addItem(graph_colors)
             self.graph_apperance_settings[len(self.graph_apperance_settings)-1].addItem(graph_colors)
 
-        self.graph_apperance_settings[5].setCurrentIndex(1)
+        self.graph_apperance_settings[5].setCurrentIndex(5)
+        self.graph_apperance_settings[7].setCurrentIndex(6)
 
         self.stop.setMaximumWidth(70)
         self.start.setMaximumWidth(70)
@@ -286,7 +289,7 @@ class mainUİ(QMainWindow):
         #widget_size_optimizes#
         self.optimize_timer = QTimer(self)
         self.optimize_timer.timeout.connect(self.optimize_widget_sizes)
-        self.optimize_timer.start(1)
+        self.optimize_timer.start(10)
 
         #menubar_animation_values/
         self.menubar_open = False
@@ -330,22 +333,20 @@ class mainUİ(QMainWindow):
         self.optimize_draw_with_9_15_mins = False
 
         current = self.file_system_view.currentIndex()
-        file_path = self.file_sys_model.filePath(current)
+        self.file_path = self.file_sys_model.filePath(current)
 
         file_exception_value = bool(0)
 
         #sound processing side#
-
+        
         self.mixer_init = pyg.mixer.init()
 
         self.mixer_variable = pyg.mixer.music
 
-        self.mixer_variable.load(file_path)
-
-        self.mixer_variable.play()
+        self.mixer_variable.load(self.file_path)
 
         try:
-            self.sound_file = wave.open(file_path)
+            self.sound_file = wave.open(self.file_path)
 
         except:
             check_box_warning_message = QMessageBox.warning(self,'Dosya türü hatası!','Lütfen bir .WAV dosyası seçin ve daha sonra tekrar deneyin!')
@@ -357,6 +358,8 @@ class mainUİ(QMainWindow):
             self.sound_file_nframes = self.sound_file.getnframes()
 
             self.sound_file_channels = self.sound_file.getnchannels()
+
+            self.sound_file_framerates = self.sound_file.getframerate()
 
             self.sound_file_time = f'{self.sound_file.getnframes() / self.sound_file.getframerate():.2f}'
 
@@ -371,8 +374,6 @@ class mainUİ(QMainWindow):
             self.sound_info_labels[2].setText(f'Sesin süresi: {self.sound_file_time} Saniye')
             self.sound_info_labels[3].setText(f'Sesin bit sayısı: {self.sound_file_channels*8}') 
             self.sound_info_labels[4].setText(f'Sesin HZ sayısı: {self.sound_file_hz}') 
-
-            self.sound_file.setpos(self.mixer_variable.get_pos())
 
             self.byte_array = self.sound_file.readframes(nframes=self.sound_file_nframes)
 
@@ -432,20 +433,70 @@ class mainUİ(QMainWindow):
             self.check_boxes_with_graph_settings[3].setChecked(False)
         
         if self.animated_draw == True:
+            self.mixer_variable.play()
+            
             self.animated_draw_index = 0
 
             if self.animated_draw == True:
                 self.animated_draw_timer = QTimer() 
                 self.animated_draw_timer.timeout.connect(self.animate_sound_frequency_graph)
-                self.animated_draw_timer.start(15)
+                self.animated_draw_timer.start(11)
             
             else:
                 pass
-        
+
+        if self.classic_draw == True:
+            if self.sound_file_framerates / self.sound_file_nframes  >= 80:
+                quest_widget = QMessageBox.question(self,'!UYARI!','Ses dosyası çok uzun optimizeli şekilde çizilmesini istermisiniz?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+                if quest_widget.Ok == True:
+                    print('1')
+                
+                else:
+                    print('2')
+
+            self.draw_sound_signal_classic()
+            
         elif self.check_boxes_with_graph_settings[1].isChecked() == False and self.check_boxes_with_graph_settings[2].isChecked() == False:
             if self.check_boxes_with_graph_settings[3].isChecked() == False and self.check_boxes_with_graph_settings[4].isChecked() == False: 
                 check_box_warning_message = QMessageBox.warning(self,'Sistem uyarı mesajı','Lütfen en az 1 tane seçenek seçin!!')
     
+    def draw_sound_signal_classic(self):
+        self.main_canvas_fig = plt.figure(figsize=(5,4))
+        self.main_canvas = QtFigureCanvasKit(figure=self.main_canvas_fig)
+        self.canvas_axis = self.main_canvas_fig.add_subplot(111)
+        self.navbar2qt = NavigationToolbar2QT(canvas=self.main_canvas)
+
+        self.main_layout.addWidget(self.floating_widget)
+
+        float_layout = QVBoxLayout()
+        dock_widget = QWidget()
+        dock_widget.setLayout(float_layout)
+        
+        self.floating_widget.setWidget(dock_widget)
+
+        self.floating_widget_label = QLabel(text='taşınabilir monitör(portable monitor)')
+        self.floating_widget_clear_plot = QPushButton(text='grafiği temizle')
+
+        self.floating_widget_label.setAlignment(Qt.AlignCenter)
+        self.floating_widget_label.setMaximumHeight(40)
+
+        float_layout.addWidget(self.floating_widget_label)
+        float_layout.addWidget(self.navbar2qt)
+        float_layout.addWidget(self.main_canvas)
+        float_layout.addWidget(self.floating_widget_clear_plot)
+
+        self.floating_widget_clear_plot.clicked.connect(self.clear_classic_plot)
+
+        self.canvas_axis.plot(self.numpy_linspace,self.numpy_byte_array)
+        self.main_canvas.draw()
+
+        self.floating_widget.show()
+    
+    def clear_classic_plot(self):
+        self.canvas_axis.clear()
+        self.main_canvas.draw()
+        
 
     def sound_file_select_event(self):
         current = self.file_system_view.currentIndex()
@@ -476,7 +527,7 @@ class mainUİ(QMainWindow):
 
         if self.index_x >= len(self.numpy_linspace):
             self.animated_draw_timer.stop()
-            self.index_x = 0
+            self.index_x = 0    
             self.chunk = 1000
         
         if self.mixer_variable.get_busy() == False:
@@ -512,7 +563,7 @@ class mainUİ(QMainWindow):
         self.mixer_variable.pause()
 
     def resume_graph(self):
-        self.animated_draw_timer.start()
+        self.animated_draw_timer.start(10)
         self.mixer_variable.unpause()
 
     def optimize_widget_sizes(self):
