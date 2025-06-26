@@ -140,9 +140,13 @@ class mainUİ(QMainWindow):
 
         self.plot_item = self.canvas = pg.PlotWidget()
 
+        self.plot_item.getViewBox().setMouseEnabled(x=False, y=False)
+
         self.curve = self.plot_item.plot([],[])
 
         self.canvas.setBackground("#000000")
+
+        self.plot_data = self.plot_item.getPlotItem()
 
         self.stop = QPushButton(text="DURDUR")
         self.start = QPushButton(text='BAŞLAT')
@@ -150,21 +154,21 @@ class mainUİ(QMainWindow):
         self.graph_settings_label = QLabel(text='Grafik seçenekleri || Grafik Ayarları')
         self.graph_settings_label.setAlignment(Qt.AlignCenter)
 
-        self.check_boxes_with_graph_settings = [QLabel('Frekans çizme ayarları:'),QCheckBox(text='Ses ile senkronize çizim'),QCheckBox(text='Klasik çizim(sadece frekans grafiği)'),QCheckBox(text='Optimizeli çizim(4-10 Dakikanın üzerindeki sesleri farklı bir motorda analiz eder)'),QCheckBox(text='Optimizeli çizim-2(9-15 dakikanın üzerindeki sesleri farklı bir monitörde analiz eder)')]
+        self.check_boxes_with_graph_settings = [QLabel('Frekans çizme ayarları:'),QCheckBox(text='Ses ile senkronize çizim'),QCheckBox(text='Klasik çizim(sadece frekans grafiği)')]
 
-        self.graph_apperance_settings = [QLabel(text='İncelik/kalınlık'),QSpinBox(),QLabel(text='Yükseklik(historgamlar için)'),QSpinBox(),QLabel(text='Grafik Rengi'),QComboBox(),QLabel(text='Grafik monitörü arka plan rengi'),QComboBox()]
+        self.graph_apperance_settings = [QLabel(text='İncelik/kalınlık'),QSpinBox(),QLabel(text='Grafik Rengi'),QComboBox(),QLabel(text='Grafik monitörü arka plan rengi'),QComboBox()]
 
-        self.colors = ['Kırmızı','Mavi','Sarı','Yeşil','Turuncu','Beyaz','Siyah']
+        self.colors = ['(Red),Kırmızı','(Blue),Mavi','(Yellow),Sarı','(Green),Yeşil','(Orange),Turuncu','(White),Beyaz','(Black),Siyah']
 
         self.graph_apperance_settings[1].setRange(0,10)
-        self.graph_apperance_settings[3].setRange(0,50)
         
         for graph_colors in self.colors: 
-            self.graph_apperance_settings[5].addItem(graph_colors)
+            self.graph_apperance_settings[3].addItem(graph_colors)
             self.graph_apperance_settings[len(self.graph_apperance_settings)-1].addItem(graph_colors)
 
+        self.graph_apperance_settings[5].addItem('(default),Orjinal')
         self.graph_apperance_settings[5].setCurrentIndex(5)
-        self.graph_apperance_settings[7].setCurrentIndex(6)
+
 
         self.stop.setMaximumWidth(70)
         self.start.setMaximumWidth(70)
@@ -421,16 +425,6 @@ class mainUİ(QMainWindow):
             self.classic_draw = True
             self.animated_draw = False
             self.check_boxes_with_graph_settings[1].setChecked(False)
-
-        if self.check_boxes_with_graph_settings[3].isChecked():
-            self.optimize_draw_with_4_10_mins = True
-            self.optimize_draw_with_9_15_mins = False
-            self.check_boxes_with_graph_settings[4].setChecked(False)
-
-        if self.check_boxes_with_graph_settings[4].isChecked():
-            self.optimize_draw_with_9_15_mins = True
-            self.optimize_draw_with_4_10_mins = False
-            self.check_boxes_with_graph_settings[3].setChecked(False)
         
         if self.animated_draw == True:
             self.mixer_variable.play()
@@ -458,7 +452,6 @@ class mainUİ(QMainWindow):
             self.draw_sound_signal_classic()
             
         elif self.check_boxes_with_graph_settings[1].isChecked() == False and self.check_boxes_with_graph_settings[2].isChecked() == False:
-            if self.check_boxes_with_graph_settings[3].isChecked() == False and self.check_boxes_with_graph_settings[4].isChecked() == False: 
                 check_box_warning_message = QMessageBox.warning(self,'Sistem uyarı mesajı','Lütfen en az 1 tane seçenek seçin!!')
     
     def draw_sound_signal_classic(self):
@@ -517,6 +510,14 @@ class mainUİ(QMainWindow):
     def animate_sound_frequency_graph(self):
         MAX_POINTS = 10000  
 
+        selected_color = self.graph_apperance_settings[3].currentText().split(',')
+        selected_bg_color = self.graph_apperance_settings[5].currentText().split(',')
+        line_width = self.graph_apperance_settings[1].value()
+
+        main_pen = pg.mkPen(color=selected_color[0].replace('(','').replace(')',''), width=line_width)
+        self.plot_item.setBackground(selected_bg_color[0].replace('(','').replace(')',''))
+        self.curve.setPen(main_pen)
+
         current = self.file_system_view.currentIndex()
 
         self.normalization_x = min(self.index_x + self.chunk, len(self.numpy_linspace))
@@ -535,6 +536,8 @@ class mainUİ(QMainWindow):
 
             self.curve.clear()
             self.curve = self.plot_item.plot([],[])
+            main_pen = pg.mkPen(color='w',width=self.graph_apperance_settings[1].value())
+            self.curve.setPen(main_pen)
 
             self.index_x = 0
             self.chunk = 1000
@@ -563,7 +566,7 @@ class mainUİ(QMainWindow):
         self.mixer_variable.pause()
 
     def resume_graph(self):
-        self.animated_draw_timer.start(10)
+        self.animated_draw_timer.start(11)
         self.mixer_variable.unpause()
 
     def optimize_widget_sizes(self):
@@ -588,7 +591,6 @@ class mainUİ(QMainWindow):
             self.menubar_prop_animation.setStartValue(300)
             self.menubar_prop_animation.setEndValue(0)
             self.menubar_prop_animation.start()
-
             self.menubar_open = False
 
     def menubar_animation_handler(self):
