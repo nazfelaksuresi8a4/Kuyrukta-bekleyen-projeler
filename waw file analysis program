@@ -1,0 +1,758 @@
+from PyQt5.QtCore import*
+from PyQt5.QtWidgets import*
+from PyQt5.QtGui import*
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as QtFigureCanvasKit 
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT 
+import matplotlib.pyplot as plt
+import sys as _s
+import numpy as np
+import pyqtgraph as pg
+from tkinter import messagebox
+import winsound as ws
+import pygame as pyg
+import datetime as dt
+import random as _rd
+import wave 
+from pyqtgraph import exporters
+
+class mainUİ(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.index_x = 0
+        self.index_y = 0
+
+        self.setWindowTitle('Waw file analysis program')
+
+        plt.style.use('dark_background')
+
+        #program-widgets
+        main_widget = QWidget()
+
+        self.setCentralWidget(main_widget)
+
+        left_widget = QWidget()
+        right_widget = QWidget()
+        graph_settings_widget = QWidget()
+        self.menu_widget = QWidget()
+        self.sound_file_info_widget = QWidget()
+
+        self.sound_file_info_widget.setObjectName('sound_file_info_separator')
+        self.menu_widget.setObjectName('side_menu')
+
+        #zone-1-main))
+
+        self.splt_1_v = QSplitter(Qt.Vertical)
+        self.splt_2_v = QSplitter(Qt.Vertical)
+
+        #zone-2-second))
+        self.splt_3_h = QSplitter(Qt.Horizontal)
+        self.splt_4_v = QSplitter(Qt.Vertical)
+        self.splt_5_v = QSplitter(Qt.Vertical)
+
+        self.splt_4_1 = QSplitter(Qt.Vertical)
+        self.splt_4_2 = QSplitter(Qt.Vertical)
+
+        self.menu_1_splt = QSplitter(Qt.Horizontal) 
+        self.menu_2_splt = QSplitter(Qt.Horizontal)
+
+        self.speed_indicator_lbl_f = QLabel()
+        self.speed_indicator_lbl_f.setAlignment(Qt.AlignCenter)
+
+        self.sound_info_label_splt = QSplitter(Qt.Vertical)
+
+        #widget-settings
+        menu_layout = QVBoxLayout()
+        self.main_layout = QHBoxLayout()
+
+        left_layout = QHBoxLayout()
+        right_layout = QVBoxLayout()
+
+        graph_settings_screen_layout = QHBoxLayout()
+        sound_file_info_screen_layout = QVBoxLayout()
+
+        main_widget.setLayout(self.main_layout)
+
+        left_widget.setLayout(left_layout)
+        right_widget.setLayout(right_layout)
+
+        graph_settings_widget.setLayout(graph_settings_screen_layout)
+        self.sound_file_info_widget.setLayout(sound_file_info_screen_layout)
+
+        self.menu_widget.setLayout(menu_layout)
+
+        self.floating_widget = QDockWidget()
+
+        self.main_layout.addWidget(self.menu_widget)
+        self.main_layout.addWidget(left_widget)
+        self.main_layout.addWidget(right_widget)
+        self.main_layout.addWidget(self.sound_file_info_widget)
+
+        left_layout.addWidget(self.splt_1_v)
+        left_layout.addWidget(self.splt_2_v)
+
+        right_layout.addWidget(self.splt_3_h)
+        right_layout.addWidget(self.splt_4_v)
+        right_layout.addWidget(self.splt_5_v)
+
+
+        #third-party-widgets#
+        fun_label = QLabel(text='EĞLENCE')
+        fun_label.setAlignment(Qt.AlignCenter)
+        fun_label.setMaximumHeight(40)
+        fun_label.setObjectName('menu_widget_fun_label')
+
+        start_anim_graph_sin = QPushButton(text='Animasyonlu sinüs grafiği başlat')
+        start_anim_graph_sincos = QPushButton(text='Animasyonlu gürültü grafiği başlat')
+        stop_all_anims = QPushButton(text='Animasyonlu grafiği durdur')
+
+        menu_layout.addWidget(fun_label)
+        menu_layout.addWidget(start_anim_graph_sin)
+        menu_layout.addWidget(start_anim_graph_sincos)
+        menu_layout.addWidget(stop_all_anims)
+        menu_layout.addWidget(self.menu_1_splt)
+        menu_layout.addWidget(self.menu_2_splt)
+
+        self.menu_widget.setFixedWidth(0)
+
+        #widgets-tools
+        self.apply_sound_file = QPushButton('Ses dosyasını işle')
+
+        self.sound_info_labels = [
+            QLabel('Ses dosyası bilgileri'),
+            QPushButton(text='Ses kanalı: ??'),
+            QPushButton(text='Sesin süresi: ??'),
+            QPushButton(text='Sesin bit sayısı: ??'),
+            QPushButton(text='Ses dosyası Kaç HZ: ??')
+                                ]
+
+        self.sound_info_labels[0].setObjectName('sound_info_label')
+
+        sound_file_info_screen_layout.addWidget(self.sound_info_label_splt)
+
+        self.sound_info_label_splt.addWidget(self.sound_info_labels[0])
+
+
+        for info_label_index in range(1,len(self.sound_info_labels)):
+            self.sound_info_labels[info_label_index].setEnabled(False)
+            self.sound_info_label_splt.addWidget(self.sound_info_labels[info_label_index])
+
+        self.hide_preverius_graph = QPushButton('Önizleme grafiğini sıfırla')
+        self.show_preverius_graph = QPushButton('Rastgele önizleme grafiği')
+        self.save_graph = QPushButton('Monitördeki Grafiği kaydet')
+
+        self.visulaizer_label = QLabel(text='Ses grafiği')
+
+        self.plot_item = self.canvas = pg.PlotWidget()
+
+        self.plot_item.getViewBox().setMouseEnabled(x=False, y=False)
+
+        self.curve = self.plot_item.plot([],[])
+
+        self.canvas.setBackground("#000000")
+
+        self.plot_data = self.plot_item.getPlotItem()
+
+        self.stop = QPushButton(text="DURDUR")
+        self.start = QPushButton(text='BAŞLAT')
+
+        self.graph_settings_label = QLabel(text='Grafik seçenekleri || Grafik Ayarları')
+        self.graph_settings_label.setAlignment(Qt.AlignCenter)
+
+        self.check_boxes_with_graph_settings = [QLabel('Frekans çizme ayarları:'),QCheckBox(text='Ses ile senkronize çizim'),QCheckBox(text='Klasik çizim(sadece frekans grafiği)')]
+
+        self.graph_apperance_settings = [QLabel(text='İncelik/kalınlık'),QSpinBox(),QLabel(text='Grafik Rengi'),QComboBox(),QLabel(text='Grafik monitörü arka plan rengi'),QComboBox()]
+
+        self.colors = ['(Red),Kırmızı','(Blue),Mavi','(Yellow),Sarı','(Green),Yeşil','(Orange),Turuncu','(White),Beyaz','(Black),Siyah']
+
+        self.graph_apperance_settings[1].setRange(0,10)
+
+        for graph_colors in self.colors: 
+            self.graph_apperance_settings[3].addItem(graph_colors)
+            self.graph_apperance_settings[len(self.graph_apperance_settings)-1].addItem(graph_colors)
+
+        self.graph_apperance_settings[5].addItem('(default),Orjinal')
+        self.graph_apperance_settings[5].setCurrentIndex(5)
+
+
+        self.stop.setMaximumWidth(70)
+        self.start.setMaximumWidth(70)
+
+        self.volume_slider = QSlider()
+        self.volume_slider.setRange(0,100)
+        self.volume_slider.setValue(50)
+        self.volume_slider.setMaximumSize(40,QWIDGETSIZE_MAX)
+
+        self.speed_indicator_label = QLabel(text='grafik hızı')
+
+        self.speed_indicator_label.setMaximumHeight(60)
+
+        self.speed_indicator = QDial()
+        self.speed_indicator.setValue(50)
+        self.speed_indicator.setRange(0,255)
+
+        self.volume_indicator = QLabel('Ses seviyesi: %50')
+        self.volume_indicator.setAlignment(Qt.AlignCenter)
+
+        self.file_system_label = QLabel('Dosya sistemi')
+        self.file_system_label.setAlignment(Qt.AlignCenter)
+
+        self.root_path_input = QLineEdit()
+        self.root_path_input.setAlignment(Qt.AlignCenter)
+        self.root_path_input.setPlaceholderText('set file system path....')
+
+        self.root_path_apply_button = QPushButton(text='Girilen dizini tanımla')
+        self.root_path_reset_button = QPushButton(text='Dosya sistemi dizinin sıfırla')
+
+        self.file_sys_model = QFileSystemModel()
+        self.file_sys_model.setRootPath('/')
+
+        self.main_rootpath = self.file_sys_model.index('')
+
+        self.file_system_view = QTreeView()
+        self.file_system_view.setModel(self.file_sys_model)
+
+        self.file_system_view.setRootIndex(self.file_sys_model.index(r'C:\Users\alper\Desktop\ftp'))
+
+        #widget-tools-settings
+
+        self.splt_1_v.addWidget(self.volume_indicator)
+        self.splt_1_v.addWidget(self.volume_slider)
+
+        self.splt_2_v.addWidget(self.file_system_label)
+        self.splt_2_v.addWidget(self.root_path_input)
+        self.splt_2_v.addWidget(self.root_path_apply_button)
+        self.splt_2_v.addWidget(self.root_path_reset_button)
+        self.splt_2_v.addWidget(self.file_system_view)
+        self.splt_2_v.addWidget(self.apply_sound_file)
+
+        container_widget = QWidget()
+        container_layout = QHBoxLayout()
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.setSpacing(0)
+
+        container_widget.setLayout(container_layout)
+
+        self.speed_indicator_label.setAlignment(Qt.AlignCenter)    
+        self.speed_indicator_lbl_f.setText('Grafik güncellenme süresi: ')
+        self.speed_indicator_lbl_f.setStyleSheet('font-size:25px;font-weight:bold')
+
+        self.menu_1_splt.addWidget(self.speed_indicator_label)
+        self.menu_1_splt.addWidget(self.speed_indicator)
+
+        self.menu_2_splt.addWidget(self.speed_indicator_lbl_f)
+
+        self.compressor_widgets = [
+            QPushButton(text='Dosya:'),
+            QPushButton(text=f'Mevcut seçili ses dosyası: --Seçilmedi--'),
+            QPushButton(),
+            QPushButton(),
+            QPushButton(text='Ses çalma:'),
+
+                            ]
+
+        for compressors in self.compressor_widgets:
+            compressors.setEnabled(False)
+            container_layout.addWidget(compressors)
+
+
+        container_layout.addWidget(self.stop,alignment=Qt.AlignCenter)
+        container_layout.addWidget(self.start,alignment=Qt.AlignCenter)
+
+        self.splt_3_h.addWidget(container_widget)
+
+        self.splt_4_v.addWidget(graph_settings_widget)
+
+        self.splt_1_v.setObjectName('splt_1')
+        self.splt_2_v.setObjectName('splt_2')
+        self.splt_3_h.setObjectName('splt_3')
+        self.splt_4_v.setObjectName('splt_4')
+        self.splt_5_v.setObjectName('splt_5')
+        self.splt_4_1.setObjectName('splt_4_1')
+        self.splt_4_2.setObjectName('splt_4_2')
+
+        graph_settings_screen_layout.addWidget(self.splt_4_1)
+        graph_settings_screen_layout.addWidget(self.splt_4_2)
+
+        for graph_settings_1 in self.check_boxes_with_graph_settings:
+            self.splt_4_1.addWidget(graph_settings_1)
+
+        container_2 = [QLabel(),QLabel()]
+
+        container_2[0].setStyleSheet('border:none')
+        container_2[1].setStyleSheet('border:none')
+
+        for _ in container_2:
+            self.splt_4_1.addWidget(_)
+
+        for graph_settings_2 in self.graph_apperance_settings:
+            self.splt_4_2.addWidget(graph_settings_2) 
+
+        self.splt_5_v.addWidget(self.visulaizer_label)
+        self.splt_5_v.addWidget(self.canvas)    
+        self.splt_5_v.addWidget(self.hide_preverius_graph)
+        self.splt_5_v.addWidget(self.show_preverius_graph)
+        self.splt_5_v.addWidget(self.save_graph)
+
+        #menu bars
+        self.main_menu_bar = self.menuBar()
+
+        self.file_menu = self.main_menu_bar.addMenu('Dosya')
+        self.view_menu = self.main_menu_bar.addMenu('Görüntü')
+        self.help_menu = self.main_menu_bar.addMenu('Yardım')
+        self.horizontal_menu_menu = self.main_menu_bar.addMenu('Yan menü')
+        self.horizontal_menu_menu_btn = self.horizontal_menu_menu.addAction('Eğlence menüsünü aç')
+
+        self.visulaizer_label.setAlignment(Qt.AlignCenter)
+
+        self.visulaizer_label.setObjectName('visulaizer_label')
+        self.stop.setObjectName('stop')
+        self.start.setObjectName('forward')
+        self.volume_indicator.setObjectName('volume_indicator')
+        self.volume_slider.setObjectName('volume_slider')
+        self.file_system_label.setObjectName('file_system_label')
+        self.file_system_view.setObjectName('file_system_view')
+        self.root_path_input.setObjectName('root_path_input')
+        self.root_path_apply_button.setObjectName('root_path_button')
+        self.graph_apperance_settings[1].setObjectName('spinbox_1')
+        self.graph_apperance_settings[3].setObjectName('spinbox_2')
+        self.graph_apperance_settings[5].setObjectName('checkbox_1')
+        self.graph_apperance_settings[len(self.graph_apperance_settings)-1].setObjectName('checkbox_1')
+        self.setObjectName('main_window')
+
+        #widget_size_optimizes#
+        self.optimize_timer = QTimer(self)
+        self.optimize_timer.timeout.connect(self.optimize_widget_sizes)
+        self.optimize_timer.start(10)
+
+        #menubar_animation_values/
+        self.menubar_open = False
+
+        #menubar_animations fresh anim/
+        self.menubar_prop_animation = QPropertyAnimation(self.menu_widget,b'maximumWidth')
+
+        #slots/event-handling/
+        self.volume_slider.valueChanged.connect(self.slider_value_updater)
+        self.root_path_apply_button.clicked.connect(self.file_system_root_path_updater)
+        self.root_path_reset_button.clicked.connect(self.file_system_root_path_reseter)
+        self.horizontal_menu_menu_btn.triggered.connect(self.trigger_side_menu)
+        self.hide_preverius_graph.clicked.connect(self.hide_graph)
+        self.show_preverius_graph.clicked.connect(self.show_graph)
+        self.apply_sound_file.clicked.connect(self.sound_file_select_event)
+        self.apply_sound_file.clicked.connect(self.procces_sound_file_event)
+        self.start.clicked.connect(self.resume_graph)
+        self.stop.clicked.connect(self.pause_graph)
+        start_anim_graph_sin.clicked.connect(self.start_animated_sin_graph)
+        start_anim_graph_sincos.clicked.connect(self.start_animated_sincos_graph)
+        stop_all_anims.clicked.connect(self.break_all_anims)
+        self.speed_indicator.valueChanged.connect(self.connect_dial_indicator)
+
+
+        #indexes#
+
+        self.sin_index = 0
+        self.sincos_index = 0 
+        self.volume_index = 0
+
+        #datas#
+
+        self.volume_linspace = np.linspace(0,10,100)
+
+        #CSS Side/
+        css_file = open(r'program_qss.css','r')
+
+        readed_css_file = css_file.read()
+
+        self.setStyleSheet(readed_css_file) 
+
+        #plot exporter-side/
+
+    def export_graph(self):
+        plotİtem = self.plot_item.getPlotItem()
+
+        exporter = exporters.ImageExporter(plotİtem)
+        exporter.export('ses_grafigi.png')    
+
+    def start_animated_sin_graph(self):
+        self.sin_timer = QTimer(self)
+        self.sin_timer.stop()
+        self.sin_timer.start(self.speed_indicator.value())
+        self.sin_timer.timeout.connect(self.animated_sin_Graph)
+
+    def start_animated_sincos_graph(self):
+        self.sincos_timer = QTimer(self)
+        self.sincos_timer.stop()
+        self.sincos_timer.start(self.speed_indicator.value())
+        self.sincos_timer.timeout.connect(self.animated_foo_Graph)
+
+    def connect_dial_indicator(self):
+        self.value = self.speed_indicator.value()
+
+        self.speed_indicator_lbl_f.setText(f'Grafik hızı: {str(self.value)}')
+
+    def animated_sin_Graph(self):
+
+        selected_color = self.graph_apperance_settings[3].currentText().split(',')
+        selected_bg_color = self.graph_apperance_settings[5].currentText().split(',')
+        line_width = self.graph_apperance_settings[1].value()
+
+        main_pen = pg.mkPen(color=selected_color[0].replace('(','').replace(')',''), width=line_width)
+        self.plot_item.setBackground(selected_bg_color[0].replace('(','').replace(')',''))
+        self.curve.setPen(main_pen)
+
+        if self.volume_index >= len(self.volume_linspace):
+            self.volume_index =0
+
+        self.volume_index += 1
+
+        self.curve.setData(np.sin(self.volume_linspace + self.volume_index))
+
+    def animated_foo_Graph(self):
+
+        selected_color = self.graph_apperance_settings[3].currentText().split(',')
+        selected_bg_color = self.graph_apperance_settings[5].currentText().split(',')
+        line_width = self.graph_apperance_settings[1].value()
+
+        main_pen = pg.mkPen(color=selected_color[0].replace('(','').replace(')',''), width=line_width)
+        self.plot_item.setBackground(selected_bg_color[0].replace('(','').replace(')',''))
+        self.curve.setPen(main_pen)
+
+        if self.volume_index >= len(self.volume_linspace):
+            self.volume_index =0
+
+        self.volume_index += 1
+
+        self.curve.setData(np.sin(np.random.normal(0,10,100) + self.volume_index))
+
+    def break_all_anims(self):
+        try:
+            self.sin_timer.stop()
+            self.sincos_timer.stop()
+            self.sincos_index = 0 
+            self.sin_index = 0
+            self.plot_item.clear()
+
+            self.curve = self.plot_item.plot([],[])
+        except:
+            pass
+
+
+    def procces_sound_file_event(self):
+
+        #checkbox items#
+        self.animated_draw = False
+        self.classic_draw = False
+        self.optimize_draw_with_4_10_mins = False
+        self.optimize_draw_with_9_15_mins = False
+
+        current = self.file_system_view.currentIndex()
+        self.file_path = self.file_sys_model.filePath(current)
+
+        file_exception_value = bool(0)
+
+        #sound processing side#
+
+        self.mixer_init = pyg.mixer.init()
+
+        self.mixer_variable = pyg.mixer.music
+
+        self.mixer_variable.load(self.file_path)
+
+        try:
+            self.sound_file = wave.open(self.file_path)
+
+        except:
+            check_box_warning_message = QMessageBox.warning(self,'Dosya türü hatası!','Lütfen bir .WAV dosyası seçin ve daha sonra tekrar deneyin!')
+
+            file_exception_value = bool(1)
+
+        if file_exception_value == bool(0):
+
+            self.sound_file_nframes = self.sound_file.getnframes()
+
+            self.sound_file_channels = self.sound_file.getnchannels()
+
+            self.sound_file_framerates = self.sound_file.getframerate()
+
+            self.sound_file_time = f'{self.sound_file.getnframes() / self.sound_file.getframerate():.2f}'
+
+            self.sound_file_hz = self.sound_file.getframerate()
+
+            if self.sound_file_channels == 2:
+                self.sound_info_labels[1].setText(f'Sesin kanal türü: STERO')
+
+            else:
+                self.sound_info_labels[1].setText(f'Sesin kanal türü: MONO')
+
+            self.sound_info_labels[2].setText(f'Sesin süresi: {self.sound_file_time} Saniye')
+            self.sound_info_labels[3].setText(f'Sesin bit sayısı: {self.sound_file_channels*8}') 
+            self.sound_info_labels[4].setText(f'Sesin HZ sayısı: {self.sound_file_hz}') 
+
+            self.byte_array = self.sound_file.readframes(nframes=self.sound_file_nframes)
+
+            if (self.sound_file.getnchannels() * 8) == 32:
+                self.numpy_byte_array = np.frombuffer(self.byte_array,dtype=np.int32)
+
+            elif (self.sound_file.getnchannels() * 8) == 16:
+                self.numpy_byte_array = np.frombuffer(self.byte_array,dtype=np.int16)
+
+            elif (self.sound_file.getnchannels() * 8) == 8:
+                self.numpy_byte_array = np.frombuffer(self.byte_array,dtype=np.int8)
+
+            else:
+                pass
+
+            sound_data = self.sound_file.getnframes() / self.sound_file.getframerate()
+
+            self.numpy_linspace = np.linspace(0,sound_data,len(self.numpy_byte_array))
+
+            self.sound_file_procces_consider()
+
+            self.sound_frequency_x_index = self.numpy_linspace
+            self.sound_frequency_y_index = self.numpy_byte_array
+
+            self.sound_frequency_x_index_length = len(self.numpy_linspace)
+            self.sound_frequency_y_index_lengt = len(self.numpy_byte_array)
+
+            self.copy_length_x = self.sound_frequency_x_index_length
+            self.copy_length_y = self.sound_frequency_y_index_lengt
+
+            self.chunk = 1024
+
+        else:
+            print('File is not valid!')
+
+    def sound_file_procces_consider(self):
+
+        #(mutually exclusive)#
+        if self.check_boxes_with_graph_settings[1].isChecked():
+            self.animated_draw = True
+            self.classic_draw = False
+            self.check_boxes_with_graph_settings[2].setChecked(False)
+
+        if self.check_boxes_with_graph_settings[2].isChecked():
+            self.classic_draw = True
+            self.animated_draw = False
+            self.check_boxes_with_graph_settings[1].setChecked(False)
+
+        if self.animated_draw == True:
+            self.mixer_variable.play()
+
+            self.animated_draw_index = 0
+
+            if self.animated_draw == True:
+                self.animated_draw_timer = QTimer() 
+                self.animated_draw_timer.timeout.connect(self.animate_sound_frequency_graph)
+                self.animated_draw_timer.start(11)
+
+            else:
+                pass
+
+        if self.classic_draw == True:
+            if self.sound_file_framerates / self.sound_file_nframes  >= 80:
+                quest_widget = QMessageBox.question(self,'!UYARI!','Ses dosyası çok uzun optimizeli şekilde çizilmesini istermisiniz?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+                if quest_widget.Ok == True:
+                    print('1')
+
+                else:
+                    print('2')
+
+            self.draw_sound_signal_classic()
+
+        elif self.check_boxes_with_graph_settings[1].isChecked() == False and self.check_boxes_with_graph_settings[2].isChecked() == False:
+                check_box_warning_message = QMessageBox.warning(self,'Sistem uyarı mesajı','Lütfen en az 1 tane seçenek seçin!!')
+
+    def draw_sound_signal_classic(self):
+        self.main_canvas_fig = plt.figure(figsize=(5,4))
+        self.main_canvas = QtFigureCanvasKit(figure=self.main_canvas_fig)
+        self.canvas_axis = self.main_canvas_fig.add_subplot(111)
+        self.navbar2qt = NavigationToolbar2QT(canvas=self.main_canvas)
+
+        self.main_layout.addWidget(self.floating_widget)
+
+        float_layout = QVBoxLayout()
+        dock_widget = QWidget()
+        dock_widget.setLayout(float_layout)
+
+        self.floating_widget.setWidget(dock_widget)
+
+        self.floating_widget_label = QLabel(text='taşınabilir monitör(portable monitor)')
+        self.floating_widget_clear_plot = QPushButton(text='grafiği temizle')
+
+        self.floating_widget_label.setAlignment(Qt.AlignCenter)
+        self.floating_widget_label.setMaximumHeight(40)
+
+        float_layout.addWidget(self.floating_widget_label)
+        float_layout.addWidget(self.navbar2qt)
+        float_layout.addWidget(self.main_canvas)
+        float_layout.addWidget(self.floating_widget_clear_plot)
+
+        self.floating_widget_clear_plot.clicked.connect(self.clear_classic_plot)
+
+        self.canvas_axis.plot(self.numpy_linspace,self.numpy_byte_array)
+        self.main_canvas.draw()
+
+        self.floating_widget.show()
+
+    def clear_classic_plot(self):
+        self.canvas_axis.clear()
+        self.main_canvas.draw()
+
+
+    def sound_file_select_event(self):
+        current = self.file_system_view.currentIndex()
+        file_path = self.file_sys_model.filePath(current)
+
+        self.x_datas = []
+        self.y_datas = []
+        self.index_x = 0
+        self.chunk = 1000
+
+        self.recursive_index = False
+
+        self.x_datas = []
+        self.y_datas = []
+
+        self.compressor_widgets[1].setText(f'Mevcut seçili ses dosyası: {self.file_sys_model.fileName(current)}')
+
+    def animate_sound_frequency_graph(self):
+        MAX_POINTS = 10000  
+
+        selected_color = self.graph_apperance_settings[3].currentText().split(',')
+        selected_bg_color = self.graph_apperance_settings[5].currentText().split(',')
+        line_width = self.graph_apperance_settings[1].value()
+
+        main_pen = pg.mkPen(color=selected_color[0].replace('(','').replace(')',''), width=line_width)
+        self.plot_item.setBackground(selected_bg_color[0].replace('(','').replace(')',''))
+        self.curve.setPen(main_pen)
+
+        current = self.file_system_view.currentIndex()
+
+        self.normalization_x = min(self.index_x + self.chunk, len(self.numpy_linspace))
+
+        self.volume = self.volume_slider.value()/10/10
+
+        self.mixer_variable.set_volume(self.volume)
+
+        if self.index_x >= len(self.numpy_linspace):
+            self.animated_draw_timer.stop()
+            self.index_x = 0    
+            self.chunk = 1000
+
+        if self.mixer_variable.get_busy() == False:
+            self.animated_draw_timer.stop()
+
+            self.curve.clear()
+            self.curve = self.plot_item.plot([],[])
+            main_pen = pg.mkPen(color='w',width=self.graph_apperance_settings[1].value())
+            self.curve.setPen(main_pen)
+
+            self.index_x = 0
+            self.chunk = 1000
+
+        self.x_datas.extend(self.numpy_linspace[self.index_x:self.normalization_x])
+        self.y_datas.extend(self.numpy_byte_array[self.index_x:self.normalization_x])
+
+        self.index_x += self.chunk
+
+        if len(self.x_datas) > MAX_POINTS:
+            self.x_datas = self.x_datas[-MAX_POINTS:]
+            self.y_datas = self.y_datas[-MAX_POINTS:]
+
+        self.curve.setData(self.x_datas,self.y_datas)
+
+    def hide_graph(self):
+        self.plot_item.clear()
+        self.curve = self.plot_item.plot([1,1,1,1],[1,1,1,1])
+
+    def show_graph(self):
+        self.plot_item.clear()
+        self.curve = self.plot_item.plot(np.random.normal(0,10,50))
+
+    def pause_graph(self):
+        self.animated_draw_timer.stop()
+        self.mixer_variable.pause()
+
+    def resume_graph(self):
+        self.animated_draw_timer.start(11)
+        self.mixer_variable.unpause()
+
+    def optimize_widget_sizes(self):
+        self.volume_indicator.setMaximumHeight(self.file_system_label.height())
+        self.volume_indicator.setMinimumHeight(self.file_system_label.height())
+        self.file_system_label.setMaximumHeight(self.volume_indicator.height())
+        self.file_system_label.setMinimumHeight(self.volume_indicator.height())
+        self.sound_info_labels[0].setMaximumHeight(self.volume_indicator.height())
+        self.sound_info_labels[0].setMinimumHeight(self.volume_indicator.height())
+
+    def trigger_side_menu(self):
+        if self.menubar_open == False:
+            self.menubar_prop_animation.setDuration(300)
+            self.menubar_prop_animation.setStartValue(0)
+            self.menubar_prop_animation.setEndValue(300)
+            self.menubar_prop_animation.start()
+
+            self.menubar_open = True
+
+        elif self.menubar_open == True:
+            self.menubar_prop_animation.setDuration(300)
+            self.menubar_prop_animation.setStartValue(300)
+            self.menubar_prop_animation.setEndValue(0)
+            self.menubar_prop_animation.start()
+            self.menubar_open = False
+
+    def menubar_animation_handler(self):
+        if self.menubar_open == False or self.menubar_open == bool(0):
+            if self.side_menu_open_index >= 140:
+                self.menubar_animation_timer.stop()
+                self.side_menu_open_index == 0
+
+                return 0
+
+            self.side_menu_open_index += 1
+
+            self.menu_widget.setFixedWidth(self.side_menu_open_index)
+
+    def slider_value_updater(self):
+        self.slider_current_value = self.volume_slider.value()
+
+        self.volume_indicator.setText(f'Ses seviyesi: {self.slider_current_value}')
+        self.volume_indicator.setMinimumHeight(self.file_system_label.height())
+        self.volume_indicator.setMaximumHeight(self.file_system_label.height())
+
+    def file_system_root_path_updater(self):
+        self.current_index = self.file_system_view.currentIndex()
+        self.current_root_path = self.root_path_input.text()
+
+        if self.current_root_path == ' ' or self.current_root_path == '':
+            root_path_error_message = QMessageBox.warning(self,'Dizin tanımlama hatası!','Dizin tanımlanırken bir sorun oluştu lütfen geçerli bir dosya dizini girip tekrar deneyiniz!')
+
+        else:
+            pass
+        try:
+            self.modelİndex = self.file_sys_model.index(self.current_root_path)
+
+            self.file_system_view.setRootIndex(self.modelİndex)
+        except:
+            warning_message = messagebox
+
+            root_path_error_message = QMessageBox.critical(self,'Dizin tanımlama hatası!','Dizin tanımlanırken bir sorun oluştu lütfen geçerli bir dosya dizini girip tekrar deneyiniz!')
+
+        finally:
+            if self.file_system_view.currentIndex() != self.current_index:
+                messagebox.showwarning(title='Dizin tanımlama hatası!',message='Dizin tanımlanırken bir sorun oluştu lütfen dizini tekrar girip deneyiniz!')
+
+            else:   
+                pass
+
+    def file_system_root_path_reseter(self):
+        self.file_system_view.setRootIndex(self.main_rootpath)
+        self.file_system_view.update()
+
+if __name__=="__main__":
+    sp = QApplication([])
+    sw = mainUİ()
+    sw.show()
+    _s.exit(sp.exec_())
