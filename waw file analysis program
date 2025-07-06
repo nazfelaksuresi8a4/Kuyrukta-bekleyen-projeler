@@ -1,3 +1,8 @@
+#UYARI#
+#bu kodda buffer-ses serisi ses datası metadata işlenirken bazı seslerde CFFI error meydana geliyor genellikle valueError döndürüyor kodda çok ciddi bir problem olmadıgı gerekçesi ile bu uyarılar güvenli bir şekilkde sessize aldındı ve hataları önlemek için ekstradan kontrol ve normalizasyon blokları eklendi eğer kod beklenmeyen bir şekilde çalışıyor ise sebebi sessize alınan C++ tabanlı bu hatalardan kaynaklı olabilir lütfen dikkali olun#
+
+
+
 from PyQt5.QtCore import*
 from PyQt5.QtWidgets import*
 from PyQt5.QtGui import*
@@ -175,7 +180,7 @@ class mainUİ(QMainWindow):
             self.graph_apperance_settings[len(self.graph_apperance_settings)-1].addItem(graph_colors)
 
         self.graph_apperance_settings[5].addItem('(default),Orjinal')
-        self.graph_apperance_settings[5].setCurrentIndex(5)
+        self.graph_apperance_settings[5].setCurrentIndex(6)
 
 
         self.stop.setMaximumWidth(70)
@@ -705,64 +710,74 @@ class mainUİ(QMainWindow):
 
     def callback(self,outdata,frames,time,status):
         #print(outdata, frames, time, status)
-            if self.mixer_variable.get_busy() == True:
-                self.position = 0
-                return 0
             
             if status:
                 print(status)
-            
-            if self.position + frames == self.n:
-                frames = self.n - self.position
-            
-            chunk_data = self.sound_data[self.position:self.position + frames]
-            outdata[:frames, 0] = chunk_data
+            try:
+                if self.position + frames == self.n:
+                    frames = self.n - self.position
+                
+                chunk_data = self.sound_data[self.position:self.position + frames]
+                outdata[:frames, 0] = chunk_data
 
-            if frames < outdata.shape[0]:
-                outdata[frames:] = 0
+                if len(chunk_data) == 0:
+                    chunk_data = np.zeros(self.chunk,dtype=outdata.dtype)
+
+                if frames < outdata.shape[0]:
+                    outdata[frames:] = 0
+                
+                self.position += frames
+
+                if len(chunk_data) == self.fft_chunk:
+                    self.fft_result = np.abs(np.fft.rfft(chunk_data))
+                    self.fft_norm = self.fft_result / np.max(self.fft_result)
+                    self.fft_data = self.fft_norm
+
+                if self.position >= self.n:
+                    self.fourier_timer.stop()
+
+                    raise sd.CallbackStop()
             
-            self.position += frames
-
-            if len(chunk_data) == self.fft_chunk:
-                self.fft_result = np.abs(np.fft.rfft(chunk_data))
-                self.fft_norm = self.fft_result / np.max(self.fft_result)
-                self.fft_data = self.fft_norm
-
-            if self.position >= self.n:
+            except:
                 self.fourier_timer.stop()
 
                 raise sd.CallbackStop()
 
     def wf_callback(self,outdata,frames,time,status):
-            self.n_wf = len(self.sound_data_wf)
+            try:
+                self.n_wf = len(self.sound_data_wf)
 
-            if status:
-                print(self.wf_data)
-            
-            if self.position_wf + frames == self.n_wf:
-                frames = self.n_wf - self.position_wf
-            
-            chunk_data = self.sound_data_wf[self.position_wf:self.position_wf + frames]
+                if status:
+                    print(self.wf_data)
+                
+                if self.position_wf + frames == self.n_wf:
+                    frames = self.n_wf - self.position_wf
+                
+                chunk_data = self.sound_data_wf[self.position_wf:self.position_wf + frames]
 
-            if len(chunk_data) == 0:
-                chunk_data = np.zeros(frames, dtype=outdata.dtype)
+                if len(chunk_data) == 0:
+                    chunk_data = np.zeros(frames, dtype=outdata.dtype)
 
-            outdata[:frames, 0] = chunk_data
+                outdata[:frames, 0] = chunk_data
 
-            if frames < outdata.shape[0]:
-                outdata[frames:] = 0
-            
-            self.position_wf += frames
+                if frames < outdata.shape[0]:
+                    outdata[frames:] = 0
+                
+                self.position_wf += frames
 
-            if len(chunk_data) == self.wf_chunk:
-                self.wf_data = chunk_data
+                if len(chunk_data) == self.wf_chunk:
+                    self.wf_data = chunk_data
 
-            if self.position_wf >= self.n_wf:
+                if self.position_wf >= self.n_wf:
+                    self.wavefrom_timer_wf.stop()
+                    self.stream_wf.stop()
+                    
+                    self.apply_sound_file.setEnabled(True)
+            except:
                 self.wavefrom_timer_wf.stop()
                 self.stream_wf.stop()
-                
+                    
                 self.apply_sound_file.setEnabled(True)
-
     
     def synchronic_ffourier_transform(self):
         print(self.frequecny,self.fft_data)
