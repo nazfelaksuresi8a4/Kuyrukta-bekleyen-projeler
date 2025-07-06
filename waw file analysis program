@@ -384,6 +384,7 @@ class mainUİ(QMainWindow):
 
         #fft-settings#
         self.fft_data = []
+        self.wf_data = []
 
         #synchronic-wfrom-settings#
 
@@ -585,13 +586,26 @@ class mainUİ(QMainWindow):
             self.check_boxes_with_graph_settings[6].setChecked(True)
 
         elif self.check_boxes_with_graph_settings[5].isChecked() and self.check_boxes_with_graph_settings[2].isChecked():
-            self.animated_draw_normal = True
             self.waveform_graph = True
+            self.animated_draw_normal = True
+            self.animated_draw_detailed = False
             self.fourier_graph = False
             self.classic_draw = False
-            self.check_boxes_with_graph_settings[1].setChecked(False)
+            self.check_boxes_with_graph_settings[5].setChecked(True)
             self.check_boxes_with_graph_settings[2].setChecked(True)
+            self.check_boxes_with_graph_settings[1].setChecked(False)
             self.check_boxes_with_graph_settings[3].setChecked(False)
+            self.check_boxes_with_graph_settings[6].setChecked(False)
+
+        elif self.check_boxes_with_graph_settings[5].isChecked() and self.check_boxes_with_graph_settings[1].isChecked():
+            self.waveform_graph = True
+            self.animated_draw_normal = False
+            self.animated_draw_detailed = True
+            self.fourier_graph = False
+            self.classic_draw = False
+            self.check_boxes_with_graph_settings[1].setChecked(True)
+            self.check_boxes_with_graph_settings[3].setChecked(False)
+            self.check_boxes_with_graph_settings[2].setChecked(False)
             self.check_boxes_with_graph_settings[5].setChecked(True)
             self.check_boxes_with_graph_settings[6].setChecked(False)
         
@@ -626,11 +640,15 @@ class mainUİ(QMainWindow):
 
             self.stream.start()
 
-            self.start_fft_spec.start_fft()
+
+
         elif self.animated_draw_detailed == True and self.waveform_graph == True:
             self.apply_sound_file.setEnabled(False)
             self.sample_r_wf = 0
-            self.wf_data = []
+            self.position_wf = 0
+
+            self.sample = wave.open(self.file_sys_model.filePath(self.file_system_view.currentIndex()))
+            
 
             self.sound_data_wf,self.sample_rate_wf = sf.read(self.file_sys_model.filePath(self.file_system_view.currentIndex()),dtype='float32')
             self.wf_chunk = 1024
@@ -638,17 +656,16 @@ class mainUİ(QMainWindow):
             if self.sound_data_wf.ndim > 1:
                 self.sound_data_wf = self.sound_data_wf[:, 0]
 
-            self.n_wf = len(self.sound_data_wf)
             self.position_wf = 0
 
             self.plot_item.clear()
-            self.curve = self.plot_item.plot(pen='g')
+            self.curve = self.plot_item.plot(pen="g")
                     
-            self.stream_wf = sd.OutputStream(samplerate=self.sample_rate_wf,
-                                          blocksize=self.wf_chunk,
-                                          channels=1,
-                                          callback=self.wf_callback,
-                                          finished_callback=self.wf_finished_callback)
+            self.stream_wf = sd.OutputStream(samplerate=self.sample.getframerate(),
+                                            blocksize=self.wf_chunk,
+                                            channels=1,
+                                            callback=self.wf_callback,
+                                            finished_callback=self.wf_finished_callback)
                     
             self.wavefrom_timer_wf = QTimer(self)
             self.wavefrom_timer_wf.timeout.connect(self.synchronic_waveform_transform)
@@ -717,18 +734,19 @@ class mainUİ(QMainWindow):
                 raise sd.CallbackStop()
 
     def wf_callback(self,outdata,frames,time,status):
-        #print(outdata, frames, time, status)
-            if self.mixer_variable.get_busy() == True:
-                self.position_wf = 0
-                return 0
-            
+            self.n_wf = len(self.sound_data_wf)
+
             if status:
-                print(status)
+                print(self.wf_data)
             
             if self.position_wf + frames == self.n_wf:
                 frames = self.n_wf - self.position_wf
             
             chunk_data = self.sound_data_wf[self.position_wf:self.position_wf + frames]
+
+            if len(chunk_data) == 0:
+                chunk_data = np.zeros(frames, dtype=outdata.dtype)
+
             outdata[:frames, 0] = chunk_data
 
             if frames < outdata.shape[0]:
@@ -740,11 +758,12 @@ class mainUİ(QMainWindow):
                 self.wf_data = chunk_data
 
             if self.position_wf >= self.n_wf:
-                self.wavefrom_timer.stop()
+                self.wavefrom_timer_wf.stop()
+                self.stream_wf.stop()
+                
+                self.apply_sound_file.setEnabled(True)
 
-                raise sd.CallbackStop()
     
-
     def synchronic_ffourier_transform(self):
         print(self.frequecny,self.fft_data)
         self.volume = self.volume_slider.value()/10/10
@@ -758,12 +777,9 @@ class mainUİ(QMainWindow):
         self.plot_item.setBackground(selected_bg_color[0].replace('(','').replace(')',''))
         self.curve.setPen(main_pen)
 
-        self.mixer_variable.set_volume(self.volume)
-
         self.curve.setData(self.frequecny,self.fft_data)
 
     def synchronic_waveform_transform(self):
-        print(self.fft_data)
         self.volume = self.volume_slider.value()/10/10
 
         main_pen = pg.mkPen(color='w',width=self.graph_apperance_settings[1].value())
@@ -775,28 +791,16 @@ class mainUİ(QMainWindow):
         self.plot_item.setBackground(selected_bg_color[0].replace('(','').replace(')',''))
         self.curve.setPen(main_pen)
 
-        self.mixer_variable.set_volume(self.volume)
-
         self.curve.setData(self.wf_data)
 
     def finished_callback(self):
         self.apply_sound_file.setEnabled(True)
         self.fourier_timer.stop()
-        self.stream.stop()
-        self.stream.close()
-        self.position = 0
-        self.fft_data = []
-        self.fft_chunk = 1024
         print('finished')
 
     def wf_finished_callback(self):
         self.apply_sound_file.setEnabled(True)
         self.wavefrom_timer_wf.stop()
-        self.stream_wf.stop()
-        self.stream_wf.close()
-        self.position_wf = 0
-        self.wf_data = []
-        self.wf_chunk = 1024
         print('finished')
 
     def draw_sound_signal_classic(self):
@@ -977,13 +981,10 @@ class mainUİ(QMainWindow):
         self.start_stop_signal.clear()
         self.start_stop_signal.append(0)
 
-        self.start_stop_signal = self.start_stop_signal
-
     def resume_button(self):
         self.start_stop_signal.clear()
         self.start_stop_signal.append(1)
 
-        self.start_stop_signal = self.start_stop_signal
 
     def signal_emitter(self):
         print(f'sinyal-1: {self.signal_mechanism[0]} || sinyal-2: {self.start_stop_signal[0]}')
@@ -1006,15 +1007,29 @@ class mainUİ(QMainWindow):
                 self.mixer_variable.unpause()
         
         elif self.signal_mechanism == [2]:
-            if self.start_stop_signal == [0]:
-                self.fourier_timer.stop()
-                self.apply_sound_file.setEnabled(True)
-                self.stream.stop()
+            if self.check_boxes_with_graph_settings[1].isChecked() == True and self.check_boxes_with_graph_settings[6].isChecked() == True:
+                if self.start_stop_signal == [0]:
+                    self.fourier_timer.stop()
+                    self.stream.stop()
+                    self.apply_sound_file.setEnabled(True)
 
-            elif self.start_stop_signal == [1]:
-                self.fourier_timer.start(30)
-                self.apply_sound_file.setEnabled(False)
-                self.stream.start()
+                elif self.start_stop_signal == [1]:
+                    self.fourier_timer.start(30)
+                    self.stream.start()
+                    self.apply_sound_file.setEnabled(False)
+
+            elif self.check_boxes_with_graph_settings[1].isChecked() == True and self.check_boxes_with_graph_settings[5].isChecked() == True:
+                if self.start_stop_signal == [0]:
+                    self.wavefrom_timer_wf.stop()
+                    self.stream_wf.stop()
+                    self.apply_sound_file.setEnabled(True)
+
+                elif self.start_stop_signal == [1]:
+                    self.wavefrom_timer_wf.start(30)
+                    self.stream_wf.start()
+                    self.apply_sound_file.setEnabled(False)
+
+
 
     def file_system_root_path_reseter(self):
         self.file_system_view.setRootIndex(self.main_rootpath)
@@ -1024,4 +1039,4 @@ if __name__=="__main__":
     sp = QApplication([])
     sw = mainUİ()
     sw.show()
-    _s.exit(sp.exec_())  sence proıje iyimi gidiyo
+    _s.exit(sp.exec_())
