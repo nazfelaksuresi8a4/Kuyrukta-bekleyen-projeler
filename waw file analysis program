@@ -624,6 +624,8 @@ class mainUİ(QMainWindow):
         if self.animated_draw_detailed == True and self.fourier_graph == True:
             self.apply_sound_file.setEnabled(False)
             self.sample_r = 0
+            self.second_index = 0
+            self.second_slider.setValue(0)
 
             self.sound_duration_fourier = wave.open(self.file_sys_model.filePath(self.file_system_view.currentIndex())) 
 
@@ -663,6 +665,8 @@ class mainUİ(QMainWindow):
             self.apply_sound_file.setEnabled(False)
             self.sample_r_wf = 0
             self.position_wf = 0
+            self.second_index = 0
+            self.second_slider.setValue(0)
 
             self.sample = wave.open(self.file_sys_model.filePath(self.file_system_view.currentIndex()))
             
@@ -693,6 +697,9 @@ class mainUİ(QMainWindow):
 
         if self.animated_draw_normal == True and self.waveform_graph == True:
             self.mixer_variable.play()
+            self.second_index = 0
+            self.second_slider.setRange(0, len(self.numpy_byte_array))
+            self.second_slider.setValue(0)
             
             self.animated_draw_index = 0
 
@@ -769,6 +776,11 @@ class mainUİ(QMainWindow):
 
                 if status:
                     print(self.wf_data)
+
+                self.second_index += frames
+
+
+                self.hms_label.setText(f'||Noktalar analiz edildi: [[{self.second_index} // {len(self.sound_data)}]] ||')
                 
                 if self.position_wf + frames == self.n_wf:
                     frames = self.n_wf - self.position_wf
@@ -779,6 +791,8 @@ class mainUİ(QMainWindow):
                     chunk_data = np.zeros(frames, dtype=outdata.dtype)
 
                 outdata[:frames, 0] = chunk_data * self.volume_slider.value() / 10 / 10
+
+                self.second_slider.setValue(self.second_index)
 
                 if frames < outdata.shape[0]:
                     outdata[frames:] = 0
@@ -890,6 +904,11 @@ class mainUİ(QMainWindow):
 
     def animate_sound_frequency_graph(self):
         MAX_POINTS = 10000  
+
+        self.second_index += self.chunk
+        self.second_slider.setValue(self.index_x)
+
+        self.hms_label.setText(f'||Noktalar analiz edildi: [[{self.second_index} // {len(self.numpy_byte_array)}]] ||')
 
         selected_color = self.graph_apperance_settings[3].currentText().split(',')
         selected_bg_color = self.graph_apperance_settings[5].currentText().split(',')
