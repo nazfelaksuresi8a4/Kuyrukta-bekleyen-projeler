@@ -145,9 +145,13 @@ class mainUİ(QMainWindow):
             self.sound_info_labels[info_label_index].setEnabled(False)
             self.sound_info_label_splt.addWidget(self.sound_info_labels[info_label_index])
 
-        self.hide_preverius_graph = QPushButton('Önizleme grafiğini sıfırla')
+        self.hide_preverius_graph = QPushButton('Monitörü temizle')
         self.show_preverius_graph = QPushButton('Rastgele önizleme grafiği')
         self.save_graph = QPushButton('Monitördeki Grafiği kaydet')
+        self.second_slider = QSlider(Qt.Horizontal)
+        self.hms_label = QLabel(text='🙂Seni bekliyorum şimdi analiz et!🙂')
+
+        self.hms_label.setAlignment(Qt.AlignCenter)
 
         self.visulaizer_label = QLabel(text='Ses grafiği')
 
@@ -167,7 +171,7 @@ class mainUİ(QMainWindow):
         self.graph_settings_label = QLabel(text='Grafik seçenekleri || Grafik Ayarları')
         self.graph_settings_label.setAlignment(Qt.AlignCenter)
 
-        self.check_boxes_with_graph_settings = [QLabel('Frekans çizme ayarları:'),QCheckBox(text='SES İLE SENKRONİZE ÇİZİM-1(uzun sesler için olan versiyon)'),QCheckBox(text='SES İLE SENKRONİZE ÇİZİM-2(kısa sesler için olan versiyon)'),QCheckBox(text='Klasik çizim(sadece frekans grafiği)'),QLabel('Grafik türü:'),QCheckBox(text="Wavefrom spektrumu"),QCheckBox(text="Fourier spektrumu")]
+        self.check_boxes_with_graph_settings = [QLabel('Frekans çizme ayarları:'),QCheckBox(text='Fourier ve Waveform ayarı  (GERÇEK ZAMANLI)'),QCheckBox(text='Waveform ayarı                   (HASSAS ÇİZİM---)'),QCheckBox(text='Klasik çizim ayarı'),QLabel('Grafik türü:'),QCheckBox(text="Wavefrom spektrumu"),QCheckBox(text="Fourier spektrumu")]
 
         self.graph_apperance_settings = [QLabel(text='İncelik/kalınlık'),QSpinBox(),QLabel(text='Grafik Rengi'),QComboBox(),QLabel(text='Grafik monitörü arka plan rengi'),QComboBox()]
 
@@ -303,9 +307,11 @@ class mainUİ(QMainWindow):
 
         self.splt_5_v.addWidget(self.visulaizer_label)
         self.splt_5_v.addWidget(self.canvas)    
+        self.splt_5_v.addWidget(self.hms_label)
         self.splt_5_v.addWidget(self.hide_preverius_graph)
         self.splt_5_v.addWidget(self.show_preverius_graph)
         self.splt_5_v.addWidget(self.save_graph)
+        self.splt_5_v.addWidget(self.second_slider)
 
         #menu bars
         self.main_menu_bar = self.menuBar()
@@ -505,7 +511,7 @@ class mainUİ(QMainWindow):
 
             self.sound_file_framerates = self.sound_file.getframerate()
 
-            self.sound_file_time = f'{self.sound_file.getnframes() / self.sound_file.getframerate():.2f}'
+            self.sound_file_time = int(self.sound_file.getnframes() / self.sound_file.getframerate())
 
             self.sound_file_hz = self.sound_file.getframerate()
 
@@ -515,7 +521,7 @@ class mainUİ(QMainWindow):
             else:
                 self.sound_info_labels[1].setText(f'Sesin kanal türü: MONO')
 
-            self.sound_info_labels[2].setText(f'Sesin süresi: {self.sound_file_time} Saniye')
+            self.sound_info_labels[2].setText(f'Sesin süresi:\n{self.sound_file_time // 60} Dakika\n{self.sound_file_time } Saniye')
             self.sound_info_labels[3].setText(f'Sesin bit sayısı: {self.sound_file_channels*8}') 
             self.sound_info_labels[4].setText(f'Sesin HZ sayısı: {self.sound_file_hz}') 
 
@@ -614,14 +620,18 @@ class mainUİ(QMainWindow):
             self.check_boxes_with_graph_settings[5].setChecked(True)
             self.check_boxes_with_graph_settings[6].setChecked(False)
         
-         
+        #fourier#
         if self.animated_draw_detailed == True and self.fourier_graph == True:
             self.apply_sound_file.setEnabled(False)
             self.sample_r = 0
 
+            self.sound_duration_fourier = wave.open(self.file_sys_model.filePath(self.file_system_view.currentIndex())) 
+
             self.sound_data,self.sample_rate = sf.read(self.file_sys_model.filePath(self.file_system_view.currentIndex()),dtype='float32')
             self.fft_chunk = 1024
-                    
+
+            self.second_slider.setRange(0, len(self.sound_data))
+
             if self.sound_data.ndim > 1:
                     self.sound_data = self.sound_data[:, 0]
 
@@ -642,6 +652,8 @@ class mainUİ(QMainWindow):
             self.fourier_timer = QTimer(self)
             self.fourier_timer.timeout.connect(self.synchronic_ffourier_transform)
             self.fourier_timer.start(30)
+
+            self.second_index = 0
 
             self.stream.start()
 
@@ -710,6 +722,11 @@ class mainUİ(QMainWindow):
 
     def callback(self,outdata,frames,time,status):
         #print(outdata, frames, time, status)
+
+            self.second_index += frames
+
+
+            self.hms_label.setText(f'||Noktalar analiz edildi: [[{self.second_index} // {len(self.sound_data)}]] ||')
             
             if status:
                 print(status)
@@ -718,7 +735,9 @@ class mainUİ(QMainWindow):
                     frames = self.n - self.position
                 
                 chunk_data = self.sound_data[self.position:self.position + frames]
-                outdata[:frames, 0] = chunk_data
+                outdata[:frames, 0] = chunk_data * self.volume_slider.value() / 10 / 10
+
+                self.second_slider.setValue(self.second_index)
 
                 if len(chunk_data) == 0:
                     chunk_data = np.zeros(self.chunk,dtype=outdata.dtype)
@@ -727,6 +746,7 @@ class mainUİ(QMainWindow):
                     outdata[frames:] = 0
                 
                 self.position += frames
+
 
                 if len(chunk_data) == self.fft_chunk:
                     self.fft_result = np.abs(np.fft.rfft(chunk_data))
@@ -758,7 +778,7 @@ class mainUİ(QMainWindow):
                 if len(chunk_data) == 0:
                     chunk_data = np.zeros(frames, dtype=outdata.dtype)
 
-                outdata[:frames, 0] = chunk_data
+                outdata[:frames, 0] = chunk_data * self.volume_slider.value() / 10 / 10
 
                 if frames < outdata.shape[0]:
                     outdata[frames:] = 0
@@ -781,7 +801,6 @@ class mainUİ(QMainWindow):
     
     def synchronic_ffourier_transform(self):
         print(self.frequecny,self.fft_data)
-        self.volume = self.volume_slider.value()/10/10
 
         main_pen = pg.mkPen(color='w',width=self.graph_apperance_settings[1].value())
         selected_color = self.graph_apperance_settings[3].currentText().split(',')
@@ -792,11 +811,9 @@ class mainUİ(QMainWindow):
         self.plot_item.setBackground(selected_bg_color[0].replace('(','').replace(')',''))
         self.curve.setPen(main_pen)
 
-        self.curve.setData(self.frequecny,self.fft_data)
+        self.curve.setData(self.frequecny,self.fft_data* self.volume_slider.value() / 10 / 10)
 
     def synchronic_waveform_transform(self):
-        self.volume = self.volume_slider.value()/10/10
-
         main_pen = pg.mkPen(color='w',width=self.graph_apperance_settings[1].value())
         selected_color = self.graph_apperance_settings[3].currentText().split(',')
         selected_bg_color = self.graph_apperance_settings[5].currentText().split(',')
@@ -806,7 +823,7 @@ class mainUİ(QMainWindow):
         self.plot_item.setBackground(selected_bg_color[0].replace('(','').replace(')',''))
         self.curve.setPen(main_pen)
 
-        self.curve.setData(self.wf_data)
+        self.curve.setData(self.wf_data* self.volume_slider.value() / 10 / 10)
 
     def finished_callback(self):
         self.apply_sound_file.setEnabled(True)
