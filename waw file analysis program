@@ -16,6 +16,7 @@ import sys as _s
 import numpy as np
 import pyqtgraph as pg
 from tkinter import messagebox
+import threading
 import winsound as ws
 import pygame as pyg
 import datetime as dt
@@ -147,7 +148,6 @@ class mainUİ(QMainWindow):
 
         self.hide_preverius_graph = QPushButton('Monitörü temizle')
         self.show_preverius_graph = QPushButton('Rastgele önizleme grafiği')
-        self.save_graph = QPushButton('Monitördeki Grafiği kaydet')
         self.second_slider = QSlider(Qt.Horizontal)
         self.hms_label = QLabel(text='🙂Seni bekliyorum şimdi analiz et!🙂')
 
@@ -310,15 +310,11 @@ class mainUİ(QMainWindow):
         self.splt_5_v.addWidget(self.hms_label)
         self.splt_5_v.addWidget(self.hide_preverius_graph)
         self.splt_5_v.addWidget(self.show_preverius_graph)
-        self.splt_5_v.addWidget(self.save_graph)
         self.splt_5_v.addWidget(self.second_slider)
 
         #menu bars
         self.main_menu_bar = self.menuBar()
 
-        self.file_menu = self.main_menu_bar.addMenu('Dosya')
-        self.view_menu = self.main_menu_bar.addMenu('Görüntü')
-        self.help_menu = self.main_menu_bar.addMenu('Yardım')
         self.horizontal_menu_menu = self.main_menu_bar.addMenu('Yan menü')
         self.horizontal_menu_menu_btn = self.horizontal_menu_menu.addAction('Eğlence menüsünü aç')
 
@@ -340,9 +336,10 @@ class mainUİ(QMainWindow):
         self.setObjectName('main_window')
 
         #widget_size_optimizes#
-        self.optimize_timer = QTimer(self)
-        self.optimize_timer.timeout.connect(self.optimize_widget_sizes)
-        self.optimize_timer.start(10)
+        self.optimize_wsizest = QTimer()
+        self.optimize_wsizest.timeout.connect(self.optimize_widget_sizes)
+        self.optimize_wsizest.start(10)
+        
 
         #menubar_animation_values/
         self.menubar_open = False
@@ -400,7 +397,6 @@ class mainUİ(QMainWindow):
         #synchronic-wfrom-settings#
 
         #plot exporter-side/
-
 
     def export_graph(self):
         plotİtem = self.plot_item.getPlotItem()
@@ -555,6 +551,7 @@ class mainUİ(QMainWindow):
             self.copy_length_y = self.sound_frequency_y_index_lengt
 
             self.chunk = 1024
+
         
         else:
             print('File is not valid!')
@@ -757,8 +754,8 @@ class mainUİ(QMainWindow):
 
                 if len(chunk_data) == self.fft_chunk:
                     self.fft_result = np.abs(np.fft.rfft(chunk_data))
-                    self.fft_norm = self.fft_result / np.max(self.fft_result)
-                    self.fft_data = self.fft_norm
+                    #self.fft_norm = self.fft_result / np.max(self.fft_result)
+                    self.fft_data = self.fft_result
 
                 if self.position >= self.n:
                     self.fourier_timer.stop()
@@ -807,25 +804,32 @@ class mainUİ(QMainWindow):
                     self.stream_wf.stop()
                     
                     self.apply_sound_file.setEnabled(True)
-            except:
+            except Exception as fourier_exception:
                 self.wavefrom_timer_wf.stop()
                 self.stream_wf.stop()
                     
                 self.apply_sound_file.setEnabled(True)
-    
+
+                print(fourier_exception)
+
     def synchronic_ffourier_transform(self):
-        print(self.frequecny,self.fft_data)
+        try:
+            print(self.frequecny,self.fft_data)
 
-        main_pen = pg.mkPen(color='w',width=self.graph_apperance_settings[1].value())
-        selected_color = self.graph_apperance_settings[3].currentText().split(',')
-        selected_bg_color = self.graph_apperance_settings[5].currentText().split(',')
-        line_width = self.graph_apperance_settings[1].value()
+            main_pen = pg.mkPen(color='w',width=self.graph_apperance_settings[1].value())
+            selected_color = self.graph_apperance_settings[3].currentText().split(',')
+            selected_bg_color = self.graph_apperance_settings[5].currentText().split(',')
+            line_width = self.graph_apperance_settings[1].value()
 
-        main_pen = pg.mkPen(color=selected_color[0].replace('(','').replace(')',''), width=line_width)
-        self.plot_item.setBackground(selected_bg_color[0].replace('(','').replace(')',''))
-        self.curve.setPen(main_pen)
+            main_pen = pg.mkPen(color=selected_color[0].replace('(','').replace(')',''), width=line_width)
+            self.plot_item.setBackground(selected_bg_color[0].replace('(','').replace(')',''))
+            self.curve.setPen(main_pen)
 
-        self.curve.setData(self.frequecny,self.fft_data* self.volume_slider.value() / 10 / 10)
+            self.curve.setData(self.frequecny,self.fft_data* self.volume_slider.value() / 10 / 10)
+        
+        except Exception as fourier_plotting_exception:   
+            print(fourier_plotting_exception)
+
 
     def synchronic_waveform_transform(self):
         main_pen = pg.mkPen(color='w',width=self.graph_apperance_settings[1].value())
@@ -837,16 +841,20 @@ class mainUİ(QMainWindow):
         self.plot_item.setBackground(selected_bg_color[0].replace('(','').replace(')',''))
         self.curve.setPen(main_pen)
 
-        self.curve.setData(self.wf_data* self.volume_slider.value() / 10 / 10)
-
+        try:
+            self.curve.setData(self.wf_data* self.volume_slider.value() / 10 / 10)
+        except Exception as Type_exception:
+            print(f'function: synchronic_waveform_transform\n\nerror:{Type_exception}')
     def finished_callback(self):
         self.apply_sound_file.setEnabled(True)
         self.fourier_timer.stop()
+        self.fft_data = None
         print('finished')
 
     def wf_finished_callback(self):
         self.apply_sound_file.setEnabled(True)
         self.wavefrom_timer_wf.stop()
+        self.wf_data = None
         print('finished')
 
     def draw_sound_signal_classic(self):
@@ -969,6 +977,8 @@ class mainUİ(QMainWindow):
         self.sound_info_labels[0].setMaximumHeight(self.volume_indicator.height())
         self.sound_info_labels[0].setMinimumHeight(self.volume_indicator.height())
 
+        self.optimize_wsizest.stop()
+
     def trigger_side_menu(self):
         if self.menubar_open == False:
             self.menubar_prop_animation.setDuration(300)
@@ -1032,10 +1042,25 @@ class mainUİ(QMainWindow):
         self.start_stop_signal.clear()
         self.start_stop_signal.append(0)
 
+        try:
+            self.animated_draw_timer.stop()
+
+        except Exception as adts_error:
+            print(adts_error)
+            
+        self.wavefrom_timer_wf.stop()
+
     def resume_button(self):
         self.start_stop_signal.clear()
         self.start_stop_signal.append(1)
-
+        
+        try:
+            self.animated_draw_timer.start()
+        
+        except Exception as adts_error_1:
+            print(adts_error_1)
+            
+        self.wavefrom_timer_wf.start()
 
     def signal_emitter(self):
         print(f'sinyal-1: {self.signal_mechanism[0]} || sinyal-2: {self.start_stop_signal[0]}')
