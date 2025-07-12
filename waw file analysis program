@@ -16,7 +16,6 @@ import sys as _s
 import numpy as np
 import pyqtgraph as pg
 from tkinter import messagebox
-import threading
 import winsound as ws
 import pygame as pyg
 import datetime as dt
@@ -391,8 +390,8 @@ class mainUİ(QMainWindow):
         self.setStyleSheet(readed_css_file) 
 
         #fft-settings#
-        self.fft_data = []
-        self.wf_data = []
+        self.fft_data = None
+        self.wf_data = None
 
         #synchronic-wfrom-settings#
 
@@ -632,7 +631,7 @@ class mainUİ(QMainWindow):
             self.second_slider.setRange(0, len(self.sound_data))
 
             if self.sound_data.ndim > 1:
-                    self.sound_data = self.sound_data[:, 0]
+                self.sound_data = self.sound_data[:, 0]
 
             self.n = len(self.sound_data)
             self.position = 0
@@ -648,13 +647,13 @@ class mainUİ(QMainWindow):
                                           callback=self.callback,
                                           finished_callback=self.finished_callback)
                     
+            self.stream.start()
+                
             self.fourier_timer = QTimer(self)
             self.fourier_timer.timeout.connect(self.synchronic_ffourier_transform)
             self.fourier_timer.start(30)
 
             self.second_index = 0
-
-            self.stream.start()
 
 
 
@@ -848,7 +847,7 @@ class mainUİ(QMainWindow):
     def finished_callback(self):
         self.apply_sound_file.setEnabled(True)
         self.fourier_timer.stop()
-        self.fft_data = None
+        self.fft_data,self.sample_rate = None,None
         print('finished')
 
     def wf_finished_callback(self):
