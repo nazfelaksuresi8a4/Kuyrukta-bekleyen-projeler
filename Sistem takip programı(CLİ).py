@@ -74,8 +74,8 @@ class mainUİ:
                     t3l = str(int(cpu_statistic_datas_2[3]))
 
                     t1 = str(int(cpu_statistic_datas_2[0]))[len(t1l) - 1]
-                    t2 = str(int(cpu_statistic_datas_2[0]))[len(t1l) - 1]
-                    t3 = str(int(cpu_statistic_datas_2[0]))[len(t1l) - 1]
+                    t2 = str(int(cpu_statistic_datas_2[1]))[len(t1l) - 1]
+                    t3 = str(int(cpu_statistic_datas_2[3]))[len(t1l) - 1]
 
                     #print(t1,   t2,    t3)
 
@@ -99,12 +99,24 @@ class mainUİ:
                     print('DURDURMAK İÇİN [SPACE]',end='\r')
                     
                     if _kb.is_pressed(57):
-                        print(Fore.LIGHTRED_EX,'\bdurduruldu')
+                        print(Fore.LIGHTRED_EX,'\b\n\ndurduruldu')
                         _ts(2)
                         print(Fore.BLUE,Style.DIM)
                         _o.system('cls')
                         mainUİ()
                         break
+            
+            elif int(user_choose) == 2:
+                _o.system('cls')
+                network_bar = '|'
+                max_network_bar_count = 64
+
+                while True:
+                    network_x = _psu.net_connections(kind='all')
+                    
+                    print(network_x,end='\r')
+
+                
                         
                     
 
