@@ -89,14 +89,22 @@ class mainUİ:
                     spaces_syscall = ' '*int(max_bar_count - int(t3))
 
                     print(Fore.RED,f'\033[1;0Hcpu kullanımı: {cpu_percent_datas}           [{updated_bars_cpu_percent}{spaces_cpu_percent}]')
-                    print(Fore.GREEN,f'\033[2;0HBağlam anahtarları: {cpu_statistic_datas_2[0] - cpu_statistic_datas_1[0] }    [{updated_bars_context_switches}{spaces_context_switches}]')
-                    print(Fore.BLUE,f'\033[3;0HKesintiler: {cpu_statistic_datas_2[1] - cpu_statistic_datas_1[1]}            [{updated_bars_interrupts}{spaces_interrupts}]')
-                    print(Fore.YELLOW,f'\033[4;0HHafif kesintiler: {cpu_statistic_datas_2[2]}          [{updated_bars_cpu_percent}{spaces_cpu_percent}]')
-                    print(Fore.RED,f'\033[5;0HSistem çağrıları: {cpu_statistic_datas_2[3] - cpu_statistic_datas_1[3]}      [{updated_syscall_bars}{spaces_syscall}]')
-                    print(Fore.GREEN,f'\033[6;0HMantıksal CPU Sayısı: {logical_cpu_count_datas}')
-                    print(Fore.CYAN,f'\033[7;0HFiziksel CPU Sayısı: {unlogical_cpu_count_datas}')
+                    print('\033[2;0H----'*20)
+                    print(Fore.GREEN,f'\033[3;0HBağlam anahtarları: {cpu_statistic_datas_2[0] - cpu_statistic_datas_1[0] }    [{updated_bars_context_switches}{spaces_context_switches}]')
+                    print('\033[4;0H----'*20)
+                    print(Fore.BLUE,f'\033[5;0HKesintiler: {cpu_statistic_datas_2[1] - cpu_statistic_datas_1[1]}            [{updated_bars_interrupts}{spaces_interrupts}]')
+                    print('\033[6;0H----'*20)
+                    print(Fore.YELLOW,f'\033[7;0HHafif kesintiler: {cpu_statistic_datas_2[2]}          [{updated_bars_cpu_percent}{spaces_cpu_percent}]')
+                    print('\033[8;0H----'*20)
+                    print(Fore.RED,f'\033[9;0HSistem çağrıları: {cpu_statistic_datas_2[3] - cpu_statistic_datas_1[3]}      [{updated_syscall_bars}{spaces_syscall}]')
+                    print('\033[10;0H----'*20)
+                    print(Fore.GREEN,f'\033[11;0HMantıksal CPU Sayısı: {logical_cpu_count_datas}')
+                    print('\033[12;0H----'*20)
+                    print(Fore.CYAN,f'\033[13;0HFiziksel CPU Sayısı: {unlogical_cpu_count_datas}')
+                    print()
                     print()
                     print('DURDURMAK İÇİN [SPACE]',end='\r')
+
                     
                     if _kb.is_pressed(57):
                         print(Fore.LIGHTRED_EX,'\b\n\ndurduruldu')
@@ -110,12 +118,66 @@ class mainUİ:
                 _o.system('cls')
                 network_bar = '|'
                 max_network_bar_count = 64
+                
+                network_x = _psu.net_io_counters(pernic=False,nowrap=False)
 
                 while True:
-                    network_x = _psu.net_connections(kind='all')
-                    
-                    print(network_x,end='\r')
+                    network_y = _psu.net_io_counters(pernic=False,nowrap=True)
 
+                    datas = [
+                        int(str(int(str(network_y[0])) - int(str(network_x[0])))[0:1]),
+                        int(str(int(str(network_y[1])) - int(str(network_x[1])))[0:1]),
+                        int(str(int(str(network_y[2])) - int(str(network_x[2])))[0:1]),
+                        int(str(int(str(network_y[3])) - int(str(network_x[3])))[0:1]) 
+                    ]
+
+                    network_bar_f_1 = network_bar * datas[0]*2
+                    network_bar_f_2 = network_bar * datas[1]*2
+                    network_bar_f_3 = network_bar * datas[2]*2
+                    network_bar_f_4 = network_bar * datas[3]*2
+                    network_bar_f_5 = network_bar * network_y[4]*2
+                    network_bar_f_6 = network_bar * network_y[5]*2
+                    network_bar_f_7 = network_bar * network_y[6]*2
+                    network_bar_f_8 = network_bar * network_y[7]*2
+
+
+                    netwok_bar_f_space_1 = ' ' * int(max_network_bar_count - datas[0]) 
+                    netwok_bar_f_space_2 = ' ' * int(max_network_bar_count - datas[1]) 
+                    netwok_bar_f_space_3 = ' ' * int(max_network_bar_count - datas[2]) 
+                    netwok_bar_f_space_4 = ' ' * int(max_network_bar_count - datas[3]) 
+                    netwok_bar_f_space_5 = ' ' * int(max_network_bar_count - network_y[4]) 
+                    netwok_bar_f_space_6 = ' ' * int(max_network_bar_count - network_y[5]) 
+                    netwok_bar_f_space_7 = ' ' * int(max_network_bar_count - network_y[6]) 
+                    netwok_bar_f_space_8 = ' ' * int(max_network_bar_count - network_y[7]) 
+
+                    
+                    print(Fore.LIGHTRED_EX,Style.BRIGHT,f'\033[1;0HAğ Hızı: {network_y[0] - network_x[0]}                 [{network_bar_f_1}{netwok_bar_f_space_1}')
+                    print('\033[2;0H----'*20)
+                    print(Fore.LIGHTGREEN_EX,Style.BRIGHT,f'\033[3;0HAğ kullanımı: {network_y[1] - network_x[1]}            [{network_bar_f_2}{netwok_bar_f_space_2}')
+                    print('\033[4;0H----'*20)
+                    print(Fore.LIGHTBLUE_EX,Style.BRIGHT,f'\033[5;0HPaket gönderildi: {network_y[2] - network_x[2]}        [{network_bar_f_3}{netwok_bar_f_space_3}')
+                    print('\033[6;0H----'*20)
+                    print(Fore.LIGHTYELLOW_EX,Style.BRIGHT,f'\033[7;0HPaket alındı: {network_y[3] - network_x[3]}            [{network_bar_f_4}{netwok_bar_f_space_4}')
+                    print('\033[8;0H----'*20)
+                    print(Fore.LIGHTCYAN_EX,Style.BRIGHT,f'\033[9;0HHatalı paketler[Alıcı]: {network_y[4] - network_x[4]}  [{network_bar_f_5}{netwok_bar_f_space_5}')
+                    print('\033[10;0H----'*20)
+                    print(Fore.LIGHTGREEN_EX,Style.BRIGHT,f'\033[11;0HHatalı paketler[Verici]: {network_y[5] - network_x[5]} [{network_bar_f_6}{netwok_bar_f_space_6}')
+                    print('\033[12;0H----'*20)
+                    print(Fore.LIGHTBLUE_EX,Style.BRIGHT,f'\033[13;0HAğdan kopan cihazlar: {network_y[6] - network_x[6]}    [{network_bar_f_7}{netwok_bar_f_space_7}')
+                    print('\033[14;0H----'*20)
+                    print(Fore.LIGHTYELLOW_EX,Style.BRIGHT,f'\033[15;0HAğa bağlanan cihazlar:: {network_y[7] - network_x[7]}  [{network_bar_f_8}{netwok_bar_f_space_8}')
+                    print()
+                    print()
+                    print('DURDURMAK İÇİN [SPACE]',end='\r')
+
+                    
+                    if _kb.is_pressed(57):
+                        print(Fore.LIGHTRED_EX,'\b\n\ndurduruldu')
+                        _ts(2)
+                        print(Fore.BLUE,Style.DIM)
+                        _o.system('cls')
+                        mainUİ()
+                        break
                 
                         
                     
