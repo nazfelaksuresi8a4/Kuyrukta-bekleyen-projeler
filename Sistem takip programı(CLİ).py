@@ -72,7 +72,7 @@ def system_monitor():
                     print('DURDURMAK İÇİN [SPACE]',end='\r')
 
                     
-                    if _kb.is_pressed(57):
+                    if _kb.is_pressed('space'):
                         print(Fore.LIGHTRED_EX,'\b\n\ndurduruldu')
                         _ts(2)
                         print(Fore.BLUE,Style.DIM)
@@ -138,7 +138,7 @@ def network_monitor():
                     print('DURDURMAK İÇİN [SPACE]',end='\r')
 
                     
-                    if _kb.is_pressed(57):
+                    if _kb.is_pressed('space'):
                         print(Fore.LIGHTRED_EX,'\b\n\ndurduruldu')
                         _ts(2)
                         print(Fore.BLUE,Style.DIM)
@@ -253,7 +253,7 @@ def all_monitors():
                     print('DURDURMAK İÇİN [SPACE]',end='\r')
 
                     
-                    if _kb.is_pressed(57):
+                    if _kb.is_pressed('space'):
                         print(Fore.LIGHTRED_EX,'\b\n\ndurduruldu')
                         _ts(2)
                         print(Fore.BLUE,Style.DIM)
