@@ -18,77 +18,86 @@ format = """
                                         |_|_| |_|_|  \___/|_|  |_| |_| |_|\__,_|\__\___/|_|    |_(_)___/
 """
 
-def system_monitor():
+def check_system_datas():
+    return _psu.cpu_stats()
+
+
+def check_network_datas():
+    return _psu.net_io_counters(pernic=False,nowrap=True)
+     
+
+class system_side():
+    def system_monitor():
+        _o.system('cls')
+
+        bar = '|'
+        max_bar_count = 64
+
+        while True:
+            cpu_statistic_datas_1 = check_system_datas()
+
+            cpu_percent_datas = _psu.cpu_percent(interval=0.1)
+
+            cpu_statistic_datas_2 = _psu.cpu_stats()
+
+            logical_cpu_count_datas,unlogical_cpu_count_datas = _psu.cpu_count(logical=True), _psu.cpu_count(logical=False) 
+            percpu_cpu_times,percpu_cpu_time_percents = _psu.cpu_times(percpu=True), _psu.cpu_times_percent(interval=0.1,percpu=True)
+
+            updated_bars_cpu_percent = bar*int(cpu_percent_datas)
+            spaces_cpu_percent = ' '*int(max_bar_count - cpu_percent_datas)
+
+            t1l = str(int(cpu_statistic_datas_2[0]))
+            t2l = str(int(cpu_statistic_datas_2[1]))
+            t3l = str(int(cpu_statistic_datas_2[3]))
+
+            t1 = str(int(cpu_statistic_datas_2[0]))[len(t1l) - 1]
+            t2 = str(int(cpu_statistic_datas_2[1]))[len(t2l) - 1]
+            t3 = str(int(cpu_statistic_datas_2[3]))[len(t3l) - 1]
+
+            #print(t1,   t2,
+            updated_bars_context_switches = bar*int(t1)
+            spaces_context_switches = ' '*int(max_bar_count - int(t1l))
+            updated_bars_interrupts = bar*int(t2)
+            spaces_interrupts = ' '*int(max_bar_count - int(t2))
+                                        
+            updated_syscall_bars = bar*int(t3)
+            spaces_syscall = ' '*int(max_bar_count - int(t3))
+            print(Fore.RED,f'\033[1;0Hcpu kullanımı: {cpu_percent_datas}           [{updated_bars_cpu_percent}{spaces_cpu_percent}]')
+            print('\033[2;0H----'*20)
+            print(Fore.GREEN,f'\033[3;0HBağlam anahtarları: {cpu_statistic_datas_2[0] - cpu_statistic_datas_1[0] }    [{updated_bars_context_switches}{spaces_context_switches}]')
+            print('\033[4;0H----'*20)
+            print(Fore.BLUE,f'\033[5;0HKesintiler: {cpu_statistic_datas_2[1] - cpu_statistic_datas_1[1]}            [{updated_bars_interrupts}{spaces_interrupts}]')
+            print('\033[6;0H----'*20)
+            print(Fore.YELLOW,f'\033[7;0HHafif kesintiler: {cpu_statistic_datas_2[2]}          [{updated_bars_cpu_percent}{spaces_cpu_percent}]')
+            print('\033[8;0H----'*20)
+            print(Fore.RED,f'\033[9;0HSistem çağrıları: {cpu_statistic_datas_2[3] - cpu_statistic_datas_1[3]}      [{updated_syscall_bars}{spaces_syscall}]')
+            print('\033[10;0H----'*20)
+            print(Fore.GREEN,f'\033[11;0HMantıksal CPU Sayısı: {logical_cpu_count_datas}')
+            print('\033[12;0H----'*20)
+            print(Fore.CYAN,f'\033[13;0HFiziksel CPU Sayısı: {unlogical_cpu_count_datas}')
+            print()
+            print()
+            print('DURDURMAK İÇİN [SPACE]',end='\r')
+
+            if _kb.is_pressed('space'):
+                print(Fore.LIGHTRED_EX,'\b\n\ndurduruldu')
+                _ts(2)
+                print(Fore.BLUE,Style.DIM)
                 _o.system('cls')
-
-                bar = '|'
-                max_bar_count = 64
-
-                cpu_statistic_datas_1 = _psu.cpu_stats()
-                while True:
-                    cpu_percent_datas = _psu.cpu_percent(interval=0.1)
-                    cpu_statistic_datas_2 = _psu.cpu_stats()
-
-                    logical_cpu_count_datas,unlogical_cpu_count_datas = _psu.cpu_count(logical=True), _psu.cpu_count(logical=False) 
-                    percpu_cpu_times,percpu_cpu_time_percents = _psu.cpu_times(percpu=True), _psu.cpu_times_percent(interval=0.1,percpu=True)
-
-                    updated_bars_cpu_percent = bar*int(cpu_percent_datas)
-                    spaces_cpu_percent = ' '*int(max_bar_count - cpu_percent_datas)
-
-                    t1l = str(int(cpu_statistic_datas_2[0]))
-                    t2l = str(int(cpu_statistic_datas_2[1]))
-                    t3l = str(int(cpu_statistic_datas_2[3]))
-
-                    t1 = str(int(cpu_statistic_datas_2[0]))[len(t1l) - 1]
-                    t2 = str(int(cpu_statistic_datas_2[1]))[len(t2l) - 1]
-                    t3 = str(int(cpu_statistic_datas_2[3]))[len(t3l) - 1]
-
-                    #print(t1,   t2,    t3)
-
-                    updated_bars_context_switches = bar*int(t1)
-                    spaces_context_switches = ' '*int(max_bar_count - int(t1))
-
-                    updated_bars_interrupts = bar*int(t2)
-                    spaces_interrupts = ' '*int(max_bar_count - int(t2))
-                                                 
-                    updated_syscall_bars = bar*int(t3)
-                    spaces_syscall = ' '*int(max_bar_count - int(t3))
-
-                    print(Fore.RED,f'\033[1;0Hcpu kullanımı: {cpu_percent_datas}           [{updated_bars_cpu_percent}{spaces_cpu_percent}]')
-                    print('\033[2;0H----'*20)
-                    print(Fore.GREEN,f'\033[3;0HBağlam anahtarları: {cpu_statistic_datas_2[0] - cpu_statistic_datas_1[0] }    [{updated_bars_context_switches}{spaces_context_switches}]')
-                    print('\033[4;0H----'*20)
-                    print(Fore.BLUE,f'\033[5;0HKesintiler: {cpu_statistic_datas_2[1] - cpu_statistic_datas_1[1]}            [{updated_bars_interrupts}{spaces_interrupts}]')
-                    print('\033[6;0H----'*20)
-                    print(Fore.YELLOW,f'\033[7;0HHafif kesintiler: {cpu_statistic_datas_2[2]}          [{updated_bars_cpu_percent}{spaces_cpu_percent}]')
-                    print('\033[8;0H----'*20)
-                    print(Fore.RED,f'\033[9;0HSistem çağrıları: {cpu_statistic_datas_2[3] - cpu_statistic_datas_1[3]}      [{updated_syscall_bars}{spaces_syscall}]')
-                    print('\033[10;0H----'*20)
-                    print(Fore.GREEN,f'\033[11;0HMantıksal CPU Sayısı: {logical_cpu_count_datas}')
-                    print('\033[12;0H----'*20)
-                    print(Fore.CYAN,f'\033[13;0HFiziksel CPU Sayısı: {unlogical_cpu_count_datas}')
-                    print()
-                    print()
-                    print('DURDURMAK İÇİN [SPACE]',end='\r')
-
-                    
-                    if _kb.is_pressed('space'):
-                        print(Fore.LIGHTRED_EX,'\b\n\ndurduruldu')
-                        _ts(2)
-                        print(Fore.BLUE,Style.DIM)
-                        _o.system('cls')
-                        mainUİ()
-                        break
-
+                mainUİ()
+                break
+    
 
 def network_monitor():
                 _o.system('cls')
                 network_bar = '|'
                 max_network_bar_count = 64
-                
-                network_x = _psu.net_io_counters(pernic=False,nowrap=False)
 
                 while True:
+                    network_x = check_network_datas()
+
+                    _ts(0.2)
+                    
                     network_y = _psu.net_io_counters(pernic=False,nowrap=True)
 
                     datas = [
@@ -152,10 +161,11 @@ def all_monitors():
                 bar = '|'
                 max_bar_count = 64
 
-                cpu_statistic_datas_1 = _psu.cpu_stats()
-                network_x = _psu.net_io_counters(pernic=False,nowrap=False)
                 while True:
-                    cpu_percent_datas = _psu.cpu_percent(interval=0.1)
+                    cpu_statistic_datas_1 = check_system_datas()
+                    network_x = check_network_datas()
+
+                    cpu_percent_datas = _psu.cpu_percent(interval=0.2)
                     cpu_statistic_datas_2 = _psu.cpu_stats()
 
                     logical_cpu_count_datas,unlogical_cpu_count_datas = _psu.cpu_count(logical=True), _psu.cpu_count(logical=False) 
@@ -295,7 +305,7 @@ class mainUİ:
 
         if user_choose.isdigit():
             if int(user_choose) == 1:
-                system_monitor()
+                system_side.system_monitor()
             
             elif int(user_choose) == 2:
                 network_monitor()
