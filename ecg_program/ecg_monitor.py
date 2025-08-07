@@ -10,15 +10,19 @@ import pygame
 class mainF(QMainWindow):
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
+        layout = QHBoxLayout()
         widget = QWidget()
-        self.setStyleSheet('background-color:black')
+        self.setStyleSheet('background-color:black;border:2px solid gray')
         self.showFullScreen()
+
+        graph_splt = QSplitter(Qt.Vertical)
+        value_splt = QSplitter(Qt.Vertical)
         
         pygame.mixer.init()
         
         self.bpm_audio = pygame.mixer_music
-        self.bpm_audio.load(r"C:\Users\alper\Desktop\electro_diagram_monitor\ecg.wav")
+        self.bpm_audio.load(r"C:\Users\Alper\Desktop\ecg_program\T12 12.1 Inch Patient Monitor (mp3cut.net).wav")
+        self.bpm_audio.set_volume(1.0)
 
         widget.setLayout(layout)
 
@@ -71,9 +75,12 @@ class mainF(QMainWindow):
         ffD_3_resp_wave = list(np.linspace(13,8,4))
         ffD_4_resp_wave = list(np.linspace(8,0,4))
 
-        cD_1_resp_Wave = list(np.linspace(0,0,10))
-        cD_2_resp_Wave = list(np.linspace(0,10,2)) 
-        cD_3_resp_Wave = list(np.linspace(10,0,2))
+        cD_1_resp_Wave = [0,0,0,0,10,10,10,10,10,10,0,0,0,0]
+        cD_2_resp_Wave = [0,0,0,0,10,10,10,10,10,10,0,0,0,0] 
+        cD_3_resp_Wave = [0,0,0,0,10,10,10,10,10,10,0,0,0,0]
+
+        spo2_bar_container = [QPushButton(),QPushButton(),QPushButton(),QPushButton(),QPushButton(),QPushButton(),
+                              QPushButton(),QPushButton(),QPushButton(),QPushButton(),QPushButton(),QPushButton()]
 
         self.amplitude_a.extend(A_flatline)
         self.amplitude_a.extend(A_P_wave)
@@ -147,18 +154,116 @@ class mainF(QMainWindow):
         timer_a_side.timeout.connect(self.update_spo2_signal)
 
         timer_b_side = QTimer(self)
-        timer_b_side.timeout.connect(self.update_saturation_signal)
         timer_b_side.timeout.connect(self.update_co2_signal)
-        timer_b_side.timeout.connect(self.update_etCo2_signal)
+        
+        timer_c_side = QTimer(self)
+        timer_c_side.timeout.connect(self.update_etCo2_signal)
 
-        timer_a_side.start(15)
-        timer_b_side.start(15)
+        timer_f_side = QTimer(self)
+        timer_f_side.timeout.connect(self.update_saturation_signal)
 
-        layout.addWidget(plotwidget_a)
-        layout.addWidget(plotwidget_b)
-        layout.addWidget(plotwidget_c)
-        layout.addWidget(plotwidget_d)
-        layout.addWidget(plotwidget_e)
+        timer_spo2_bar_side = QTimer(self)
+        timer_spo2_bar_side.timeout.connect(self.update_spo2_breath_bars)
+        timer_spo2_bar_side.start(40)
+        
+        timer_c_side.start(35)
+        timer_a_side.start(25)
+        timer_b_side.start(25)
+        timer_f_side.start(50)
+
+        self.nıbp_lbl = QLabel('NIBP')
+        self.nıbp_val_lbl = QLabel('120 / 80')
+
+        self.bpm_lbl = QLabel('ECG | bpm')
+        self.bpm_val_lbl = QLabel('88')
+
+        self.resp_lbl = QLabel('Resp')
+        self.resp_val_lbl = QLabel(text='25')
+
+        self.temp_lbl = QLabel('Temp')
+        self.temp_lbl_t1 = QLabel('t1  97.5')
+        self.temp_lbl_t2 = QLabel('t2  97.0')
+
+        self.spo2_label = QLabel(text='SpO²')
+        self.spo2_val_label = QLabel(text='98')
+        self.spo2_bars = spo2_bar_container
+
+        self.co2_lbl = QLabel('CO²')
+
+        self.nıbp_lbl.setAlignment(Qt.AlignCenter)
+        self.nıbp_val_lbl.setMaximumWidth(15000)
+        self.bpm_lbl.setAlignment(Qt.AlignCenter)
+        self.bpm_val_lbl.setMaximumWidth(15000)
+        self.co2_lbl.setAlignment(Qt.AlignCenter)
+        self.resp_lbl.setAlignment(Qt.AlignCenter)
+        self.resp_val_lbl.setMaximumWidth(15000)
+        self.temp_lbl.setAlignment(Qt.AlignCenter)
+        self.temp_lbl_t1.setAlignment(Qt.AlignCenter)
+        self.temp_lbl_t2.setAlignment(Qt.AlignCenter)
+        self.spo2_label.setAlignment(Qt.AlignCenter)
+        self.spo2_val_label.setMaximumWidth(15000)
+        #self.co2...setAlignment(Qt.AlignCenter)
+
+        self.bpm_lbl.setStyleSheet('font-weight:bolder;font-size:45px;color:green')
+        self.bpm_val_lbl.setStyleSheet('font-weight:bolder;font-size:90px;color:green')
+        self.spo2_label.setStyleSheet('font-weight:bolder;font-size:45px;color:orange')
+        self.spo2_val_label.setStyleSheet('font-weight:bolder;font-size:95px;color:orange')
+        self.resp_lbl.setStyleSheet('font-weight:bolder;font-size:45px;color:white')
+        self.resp_val_lbl.setStyleSheet('font-weight:bolder;font-size:95px;color:orange')
+        self.nıbp_lbl.setStyleSheet('font-weight:bolder;font-size:45px;color:white')
+        self.nıbp_val_lbl.setStyleSheet('font-weight:bolder;font-size:95px;color:white')
+        self.temp_lbl.setStyleSheet('font-weight:bolder;font-size:50px;color:white')
+        self.temp_lbl_t1.setStyleSheet('font-weight:bolder;font-size:45px;color:white')
+        self.temp_lbl_t2.setStyleSheet('font-weight:bolder;font-size:45px;color:white')
+
+        self.bpm_splt = QSplitter(Qt.Horizontal)
+        self.Temp_splt = QSplitter(Qt.Horizontal)
+        self.Temp_t1t2_splt = QSplitter(Qt.Vertical)
+        self.spo2_splt = QSplitter(Qt.Horizontal)
+        self.nıbp_splt = QSplitter(Qt.Horizontal)
+        self.resp_splt = QSplitter(Qt.Horizontal)
+        self.spo2bar_splt = QSplitter(Qt.Vertical)
+
+        self.bpm_splt.addWidget(self.bpm_lbl)
+        self.bpm_splt.addWidget(self.bpm_val_lbl)
+
+        self.Temp_splt.addWidget(self.temp_lbl)
+        self.Temp_splt.addWidget(self.Temp_t1t2_splt)
+
+        self.Temp_t1t2_splt.addWidget(self.temp_lbl_t1)
+        self.Temp_t1t2_splt.addWidget(self.temp_lbl_t2)
+
+        self.spo2_splt.addWidget(self.spo2_label)
+        self.spo2_splt.addWidget(self.spo2_val_label)
+        self.spo2_splt.addWidget(self.spo2bar_splt)
+        for spo2_bar in self.spo2_bars:
+            self.spo2bar_splt.addWidget(spo2_bar)
+        
+        self.nıbp_splt.addWidget(self.nıbp_lbl)
+        self.nıbp_splt.addWidget(self.nıbp_val_lbl)
+
+        self.resp_splt.addWidget(self.resp_lbl)
+        self.resp_splt.addWidget(self.resp_val_lbl)
+
+        graph_splt.addWidget(plotwidget_a)
+        graph_splt.addWidget(plotwidget_b)
+        graph_splt.addWidget(plotwidget_c)
+        graph_splt.addWidget(plotwidget_d)
+        graph_splt.addWidget(plotwidget_e)
+
+        value_splt.addWidget(self.bpm_splt)
+        value_splt.addWidget(self.spo2_splt)
+        value_splt.addWidget(self.nıbp_splt)
+        value_splt.addWidget(self.resp_splt)
+        value_splt.addWidget(self.Temp_splt)
+        value_splt.addWidget(self.co2_lbl)
+        
+
+        layout.addWidget(graph_splt)
+        layout.addWidget(value_splt)
+
+        self.spo2_index = 0
+        self.direction = 1
 
         self.setCentralWidget(widget)
 
@@ -209,7 +314,7 @@ class mainF(QMainWindow):
             self.dynamic_array_c.append(self.amplitude_c[self.index_c] + 0.01)
             x_axis = list(range(len(self.dynamic_array_c)))
 
-            if len(self.dynamic_array_c) >= 250:
+            if len(self.dynamic_array_c) >= 110:
                 self.dynamic_array_c.pop(0)
                 if len(x_axis) != len(self.dynamic_array_c):
                     x_axis.pop()
@@ -224,7 +329,7 @@ class mainF(QMainWindow):
             self.index_d = 0
         
         else:
-            data = self.amplitude_d[self.index_d]
+            data = list(np.sin(np.linspace(0,10,100)))[self.index_d]
             self.dynamic_array_d.append(data)
             
             x_axis = list(range(len(self.dynamic_array_d)))
@@ -248,7 +353,7 @@ class mainF(QMainWindow):
             
             x_axis = list(range(len(self.dynamic_array_e)))
 
-            if len(self.dynamic_array_e) >= 150:
+            if len(self.dynamic_array_e) >= 100:
                 self.dynamic_array_e.pop(0)
                 if len(x_axis) != len(self.dynamic_array_e):
                     x_axis.pop()
@@ -257,6 +362,23 @@ class mainF(QMainWindow):
             self.index_e += 1
 
             self.line_e.setData(x_axis,self.dynamic_array_e)
+    
+    def update_spo2_breath_bars(self):
+        if self.direction == 1:
+            if self.spo2_index < len(self.spo2_bars):
+                self.spo2_bars[self.spo2_index].setStyleSheet('background-color:black')
+                self.spo2_index += 1
+            
+            else:
+                self.direction = -1
+        
+        else:
+            if self.spo2_index == 0:
+                self.direction = 1
+            
+            else:
+                self.spo2_bars[self.spo2_index - 1].setStyleSheet('background-color:green')
+                self.spo2_index -= 1
 
 if __name__=="__main__":
     sp = QApplication([])
