@@ -1,0 +1,6 @@
+#web scrapping kaynağı: https://www.eshot.gov.tr/
+#opsiyonel(harita apisi): https://www.eshot.gov.tr/
+#otobüğs-dıurak api kaynağı: 
+
+#proje amacı: bu proje belirtilen duraktan geçen otobüslerin hangi sıra ile geçtiğini listeyen bir program olacak
+
